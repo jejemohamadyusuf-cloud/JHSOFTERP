@@ -19,6 +19,7 @@
             @foreach (\App\Support\MasterDataCatalog::all() as $key => $master)
                 <a class="nav-link {{ request()->route('master') === $key ? 'active' : '' }}" href="{{ route('master-data.index', $key) }}"><span>▦</span> {{ $master['label'] }}</a>
             @endforeach
+            <a class="nav-link {{ request()->routeIs('master-prices.*') ? 'active' : '' }}" href="{{ route('master-prices.index') }}"><span>＄</span> Master Harga</a>
             <a class="nav-link {{ request()->routeIs('boms.*') ? 'active' : '' }}" href="{{ route('boms.index') }}"><span>◫</span> Bill of Materials</a>
             <div class="side-label">PENJUALAN</div>
             <a class="nav-link {{ request()->routeIs('sales-orders.*') ? 'active' : '' }}" href="{{ route('sales-orders.index') }}"><span>▣</span> Sales Order</a>

@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\Location;
+use App\Models\MasterPrice;
 use App\Models\Supplier;
 use App\Models\Unit;
 use App\Models\Warehouse;
@@ -179,6 +180,22 @@ final class MasterDataSeeder extends Seeder
                 $items[$attributes['code']] = Item::query()->updateOrCreate(
                     ['code' => $attributes['code']],
                     $attributes,
+                );
+            }
+
+            foreach ($items as $code => $item) {
+                MasterPrice::query()->updateOrCreate(
+                    ['item_id' => $item->id, 'start_date' => '2026-10-01'],
+                    [
+                        'price' => match ($code) {
+                            'BB-PLY-001' => 375000,
+                            'BB-BESI-001' => 145000,
+                            'BB-BAUT-001' => 2000,
+                            'WIP-MEJA-001' => 325000,
+                            'FG-MEJA-001' => 950000,
+                        },
+                        'end_date' => null,
+                    ],
                 );
             }
 

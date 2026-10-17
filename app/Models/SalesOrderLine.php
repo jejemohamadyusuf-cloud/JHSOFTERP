@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SalesOrderLine extends Model
 {
-    protected $fillable = ['sales_order_id', 'item_id', 'qty', 'unit_price', 'unit_id'];
+    protected $fillable = ['sales_order_id', 'item_id', 'qty', 'unit_price', 'unit_id', 'master_price_id'];
 
     protected function casts(): array
     {
@@ -33,6 +33,11 @@ class SalesOrderLine extends Model
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);
+    }
+
+    public function masterPrice(): BelongsTo
+    {
+        return $this->belongsTo(MasterPrice::class);
     }
 
     public function deliveryLines(): HasMany

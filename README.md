@@ -16,6 +16,7 @@ JHSOFTERP adalah aplikasi ERP untuk proses pembelian, persediaan, produksi, dan 
 - Gudang dan lokasi gudang
 - Bill of Materials (BOM) beserta daftar komponennya
 - Sales Order draft, konfirmasi pesanan, dan detail baris barang
+- Master Harga per barang dengan riwayat periode berlaku
 
 Jalankan migrasi database dan siapkan asset frontend sebelum membuka aplikasi:
 
@@ -26,7 +27,7 @@ npm run build
 php artisan serve
 ```
 
-Dashboard tersedia di `/`. BOM dikelola melalui menu **Bill of Materials**, dan pesanan melalui menu **Sales Order**. Sales Order yang dikonfirmasi belum mengubah stok; pengurangan stok dilakukan saat delivery dan piutang dicatat saat invoice.
+Dashboard tersedia di `/`. BOM dikelola melalui menu **Bill of Materials**, harga melalui **Master Harga**, dan pesanan melalui **Sales Order**. Harga SO ditentukan dari Master Harga sesuai tanggal SO dan disimpan sebagai snapshot; ubah harga melalui Master Harga, bukan dari SO. Periode harga per barang tidak boleh tumpang tindih. Sales Order yang dikonfirmasi belum mengubah stok; pengurangan stok dilakukan saat delivery dan piutang dicatat saat invoice.
 
 ## About Laravel
 

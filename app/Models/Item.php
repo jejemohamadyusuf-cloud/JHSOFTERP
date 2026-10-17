@@ -54,4 +54,9 @@ class Item extends Model
     {
         return $this->hasMany(InventoryTransaction::class);
     }
+
+    public function masterPrices(): HasMany
+    {
+        return $this->hasMany(MasterPrice::class);
+    }
 }

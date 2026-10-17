@@ -119,6 +119,8 @@ tr:hover td { background: #fcfdfd; }
 .summary-card > strong { color: #344357; font-size: 12px; }
 .amount-col { text-align: right; white-space: nowrap; }
 table tfoot th { border-top: 1px solid #e1e7eb; color: #334357; font-size: 12px; text-transform: none; letter-spacing: 0; }
+.price-preview { min-height: 39px; padding: 10px 11px; border: 1px solid #dfe5e9; border-radius: 6px; background: #f8fafb; color: #147a61; font-size: 12px; font-weight: 700; }
+.price-preview[data-ready="false"] { color: #9a6b26; font-weight: 500; }
 
 @media (max-width: 1100px) {
     .master-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

@@ -14,6 +14,8 @@ use Illuminate\Validation\ValidationException;
 
 final class SalesOrderService
 {
+    public function __construct(private readonly MasterPriceService $prices) {}
+
     /**
      * @return LengthAwarePaginator<int, SalesOrder>
      */
@@ -58,11 +60,13 @@ final class SalesOrderService
                 'customer_id' => $attributes['customer_id'],
                 'order_date' => $attributes['order_date'],
                 'status' => 'draft',
-                'total_amount' => $this->totalAmount($attributes['lines']),
+                'total_amount' => '0.00',
                 'notes' => $attributes['notes'] ?? null,
             ]);
 
-            $this->replaceLines($order, $attributes['lines'], $items);
+            $order->update([
+                'total_amount' => $this->replaceLines($order, $attributes['lines'], $items, $attributes['order_date']),
+            ]);
 
             return $order;
         });
@@ -81,12 +85,13 @@ final class SalesOrderService
             $order->update([
                 'customer_id' => $attributes['customer_id'],
                 'order_date' => $attributes['order_date'],
-                'total_amount' => $this->totalAmount($attributes['lines']),
                 'notes' => $attributes['notes'] ?? null,
             ]);
 
             $order->lines()->delete();
-            $this->replaceLines($order, $attributes['lines'], $items);
+            $order->update([
+                'total_amount' => $this->replaceLines($order, $attributes['lines'], $items, $attributes['order_date']),
+            ]);
 
             return $order;
         });
@@ -111,7 +116,7 @@ final class SalesOrderService
     }
 
     /**
-     * @param  array<int, array{item_id: int|string, qty: int|float|string, unit_price: int|float|string}>  $lines
+     * @param  array<int, array{item_id: int|string, qty: int|float|string}>  $lines
      * @return Collection<int, Item>
      */
     private function itemsForLines(array $lines): Collection
@@ -132,31 +137,32 @@ final class SalesOrderService
     }
 
     /**
-     * @param  array<int, array{item_id: int|string, qty: int|float|string, unit_price: int|float|string}>  $lines
+     * @param  array<int, array{item_id: int|string, qty: int|float|string}>  $lines
      */
-    private function replaceLines(SalesOrder $order, array $lines, Collection $items): void
-    {
-        foreach ($lines as $line) {
-            $item = $items->get((int) $line['item_id']);
-
-            $order->lines()->create([
-                'item_id' => $item->id,
-                'qty' => $line['qty'],
-                'unit_price' => $line['unit_price'],
-                'unit_id' => $item->unit_id,
-            ]);
-        }
-    }
-
-    /**
-     * @param  array<int, array{qty: int|float|string, unit_price: int|float|string}>  $lines
-     */
-    private function totalAmount(array $lines): string
+    private function replaceLines(SalesOrder $order, array $lines, Collection $items, string $orderDate): string
     {
         $total = 0.0;
 
         foreach ($lines as $line) {
-            $total += round((float) $line['qty'] * (float) $line['unit_price'], 2);
+            $item = $items->get((int) $line['item_id']);
+            $masterPrice = $this->prices->priceForDate((int) $item->id, $orderDate, lock: true);
+
+            if ($masterPrice === null) {
+                throw ValidationException::withMessages([
+                    'lines' => "Harga {$item->code} belum tersedia pada tanggal Sales Order.",
+                ]);
+            }
+
+            $lineTotal = round((float) $line['qty'] * (float) $masterPrice->price, 2);
+            $total += $lineTotal;
+
+            $order->lines()->create([
+                'item_id' => $item->id,
+                'qty' => $line['qty'],
+                'unit_price' => $masterPrice->price,
+                'unit_id' => $item->unit_id,
+                'master_price_id' => $masterPrice->id,
+            ]);
         }
 
         return number_format($total, 2, '.', '');

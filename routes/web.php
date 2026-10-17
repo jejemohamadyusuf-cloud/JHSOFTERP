@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\BomController;
 use App\Http\Controllers\MasterDataController;
+use App\Http\Controllers\MasterPriceController;
 use App\Http\Controllers\SalesOrderController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,9 +21,16 @@ Route::prefix('master')->name('master-data.')->group(function (): void {
 
 Route::resource('boms', BomController::class)->except('show');
 
+Route::get('/sales-orders/price-lookup', [MasterPriceController::class, 'lookup'])
+    ->middleware('throttle:60,1')
+    ->name('sales-orders.price');
 Route::post('/sales-orders/{salesOrder}/confirm', [SalesOrderController::class, 'confirm'])
     ->whereNumber('salesOrder')
     ->name('sales-orders.confirm');
 Route::resource('sales-orders', SalesOrderController::class)->only([
     'index', 'create', 'store', 'show', 'edit', 'update',
+]);
+
+Route::resource('master-prices', MasterPriceController::class)->only([
+    'index', 'create', 'store', 'edit', 'update', 'destroy',
 ]);

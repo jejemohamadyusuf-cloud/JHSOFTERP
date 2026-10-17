@@ -23,6 +23,10 @@
             <span class="card-icon">◫</span><span class="card-title">Bill of Materials</span>
             <span class="card-desc">Atur komponen dan kebutuhan produk</span><span class="card-arrow">→</span>
         </a>
+        <a class="master-card" href="{{ route('master-prices.index') }}">
+            <span class="card-icon">＄</span><span class="card-title">Master Harga</span>
+            <span class="card-desc">Atur harga dan masa berlakunya</span><span class="card-arrow">→</span>
+        </a>
         <a class="master-card" href="{{ route('sales-orders.index') }}">
             <span class="card-icon">▣</span><span class="card-title">Sales Order</span>
             <span class="card-desc">Catat pesanan pelanggan</span><span class="card-arrow">→</span>

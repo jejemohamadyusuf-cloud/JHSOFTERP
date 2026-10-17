@@ -31,18 +31,18 @@
             </div>
         </div>
         <div class="bom-lines-heading">
-            <div><h2>Barang pesanan</h2><p>Harga dan kuantitas dicatat per baris; satuan mengikuti master barang.</p></div>
+            <div><h2>Barang pesanan</h2><p>Harga otomatis mengikuti Master Harga berdasarkan tanggal pesanan dan tidak dapat diubah di Sales Order.</p></div>
             <button class="button secondary" type="button" id="add-sales-line">＋ Tambah barang</button>
         </div>
         @error('lines')<div class="field-error line-error">{{ $message }}</div>@enderror
         <div class="sales-lines" id="sales-lines">
-            @php($lines = old('lines', $order?->lines->map(fn ($line) => ['item_id' => $line->item_id, 'qty' => $line->qty, 'unit_price' => $line->unit_price])->all() ?? [['item_id' => '', 'qty' => '', 'unit_price' => '']]))
+            @php($lines = old('lines', $order?->lines->map(fn ($line) => ['item_id' => $line->item_id, 'qty' => $line->qty])->all() ?? [['item_id' => '', 'qty' => '']]))
             @foreach ($lines as $index => $line)
                 @include('sales-orders._line', ['index' => $index, 'line' => $line, 'items' => $items])
             @endforeach
         </div>
         <template id="sales-line-template">
-            @include('sales-orders._line', ['index' => '__INDEX__', 'line' => ['item_id' => '', 'qty' => '', 'unit_price' => ''], 'items' => $items])
+            @include('sales-orders._line', ['index' => '__INDEX__', 'line' => ['item_id' => '', 'qty' => ''], 'items' => $items])
         </template>
         <div class="form-actions"><a class="button secondary" href="{{ $order ? route('sales-orders.show', $order) : route('sales-orders.index') }}">Batal</a><button class="button primary" type="submit">Simpan sebagai draft</button></div>
     </form>
@@ -50,15 +50,65 @@
         (() => {
             const container = document.getElementById('sales-lines');
             const template = document.getElementById('sales-line-template').innerHTML;
+            const orderDate = document.getElementById('order_date');
+            const lookupUrl = @json(route('sales-orders.price'));
+
+            const updatePrice = async (line) => {
+                const itemId = line.querySelector('[data-item-select]').value;
+                const preview = line.querySelector('[data-price-preview]');
+                preview.textContent = 'Memuat harga...';
+                preview.dataset.ready = 'false';
+
+                if (!itemId || !orderDate.value) {
+                    preview.textContent = 'Pilih barang dan tanggal pesanan';
+                    return;
+                }
+
+                const url = new URL(lookupUrl, window.location.origin);
+                url.searchParams.set('item_id', itemId);
+                url.searchParams.set('order_date', orderDate.value);
+
+                try {
+                    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        preview.textContent = result.message || 'Harga tidak ditemukan';
+                        return;
+                    }
+
+                    preview.textContent = `Rp ${Number(result.price).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+                    preview.dataset.ready = 'true';
+                } catch {
+                    preview.textContent = 'Harga gagal dimuat. Coba lagi.';
+                }
+            };
+
+            const refreshPrices = () => container.querySelectorAll('.sales-line').forEach(updatePrice);
+
+            container.addEventListener('change', (event) => {
+                if (event.target.matches('[data-item-select]')) {
+                    updatePrice(event.target.closest('.sales-line'));
+                }
+            });
+            orderDate.addEventListener('change', refreshPrices);
             document.getElementById('add-sales-line').addEventListener('click', () => {
                 const index = container.querySelectorAll('.sales-line').length;
                 container.insertAdjacentHTML('beforeend', template.replaceAll('__INDEX__', index));
+                updatePrice(container.lastElementChild);
             });
             container.addEventListener('click', (event) => {
                 if (event.target.closest('.remove-line')) {
                     event.target.closest('.sales-line').remove();
                 }
             });
+            document.querySelector('.form-card').addEventListener('submit', (event) => {
+                if ([...container.querySelectorAll('.sales-line')].some((line) => line.querySelector('[data-price-preview]').dataset.ready !== 'true')) {
+                    event.preventDefault();
+                    window.alert('Pastikan semua barang memiliki Master Harga yang berlaku pada tanggal pesanan.');
+                }
+            });
+            refreshPrices();
         })();
     </script>
 @endsection
