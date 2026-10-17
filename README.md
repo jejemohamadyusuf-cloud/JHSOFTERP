@@ -7,6 +7,27 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## JHSOFTERP
+
+JHSOFTERP adalah aplikasi ERP untuk proses pembelian, persediaan, produksi, dan penjualan. Modul data master yang tersedia:
+
+- Barang, kategori barang, dan satuan
+- Pelanggan dan supplier
+- Gudang dan lokasi gudang
+- Bill of Materials (BOM) beserta daftar komponennya
+- Sales Order draft, konfirmasi pesanan, dan detail baris barang
+
+Jalankan migrasi database dan siapkan asset frontend sebelum membuka aplikasi:
+
+```bash
+php artisan migrate
+npm install
+npm run build
+php artisan serve
+```
+
+Dashboard tersedia di `/`. BOM dikelola melalui menu **Bill of Materials**, dan pesanan melalui menu **Sales Order**. Sales Order yang dikonfirmasi belum mengubah stok; pengurangan stok dilakukan saat delivery dan piutang dicatat saat invoice.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
