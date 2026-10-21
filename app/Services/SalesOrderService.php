@@ -9,12 +9,14 @@ use App\Models\SalesOrder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 final class SalesOrderService
 {
-    public function __construct(private readonly MasterPriceService $prices) {}
+    public function __construct(
+        private readonly MasterPriceService $prices,
+        private readonly SalesOrderNumberGenerator $numberGenerator,
+    ) {}
 
     /**
      * @return LengthAwarePaginator<int, SalesOrder>
@@ -56,7 +58,7 @@ final class SalesOrderService
         return DB::transaction(function () use ($attributes): SalesOrder {
             $items = $this->itemsForLines($attributes['lines']);
             $order = SalesOrder::query()->create([
-                'so_number' => 'SO-'.now()->format('Ymd').'-'.Str::ulid(),
+                'so_number' => $this->numberGenerator->next($attributes['order_date']),
                 'customer_id' => $attributes['customer_id'],
                 'order_date' => $attributes['order_date'],
                 'status' => 'draft',

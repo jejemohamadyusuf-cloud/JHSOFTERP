@@ -44,4 +44,9 @@ class SalesOrderLine extends Model
     {
         return $this->hasMany(DeliveryLine::class);
     }
+
+    public function workOrders(): HasMany
+    {
+        return $this->hasMany(WorkOrder::class);
+    }
 }

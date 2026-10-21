@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class MasterPrice extends Model
 {
-    protected $fillable = ['item_id', 'price', 'start_date', 'end_date'];
+    protected $fillable = ['item_id', 'price_type', 'price', 'start_date', 'end_date'];
 
     protected function casts(): array
     {
@@ -29,5 +29,10 @@ final class MasterPrice extends Model
     public function salesOrderLines(): HasMany
     {
         return $this->hasMany(SalesOrderLine::class);
+    }
+
+    public function purchaseOrderLines(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderLine::class);
     }
 }

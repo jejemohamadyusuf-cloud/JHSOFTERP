@@ -5,6 +5,7 @@
         <div><h1>{{ $order ? 'Ubah Sales Order' : 'Buat Sales Order' }}</h1><p>Dokumen dibuat sebagai draft; konfirmasi tidak mengurangi stok.</p></div>
         <a class="button secondary" href="{{ $order ? route('sales-orders.show', $order) : route('sales-orders.index') }}">← Kembali</a>
     </div>
+    <x-pic-guide module="sales-orders" />
     <form class="form-card" method="POST" action="{{ $order ? route('sales-orders.update', $order) : route('sales-orders.store') }}">
         @csrf
         @if ($order) @method('PUT') @endif
@@ -36,7 +37,7 @@
         </div>
         @error('lines')<div class="field-error line-error">{{ $message }}</div>@enderror
         <div class="sales-lines" id="sales-lines">
-            @php($lines = old('lines', $order?->lines->map(fn ($line) => ['item_id' => $line->item_id, 'qty' => $line->qty])->all() ?? [['item_id' => '', 'qty' => '']]))
+            @php($lines = old('lines', $order?->lines->map(fn ($line) => ['item_id' => $line->item_id, 'qty' => number_format((float) $line->qty, 2, '.', '')])->all() ?? [['item_id' => '', 'qty' => '']]))
             @foreach ($lines as $index => $line)
                 @include('sales-orders._line', ['index' => $index, 'line' => $line, 'items' => $items])
             @endforeach

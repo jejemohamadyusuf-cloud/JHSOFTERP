@@ -46,6 +46,40 @@ final class MasterPriceTest extends TestCase
         $this->assertDatabaseCount('master_prices', 1);
     }
 
+    public function test_sell_and_buy_prices_have_independent_periods_and_lookups(): void
+    {
+        $item = Item::factory()->create();
+        $sellPrice = $this->createPrice($item, '125.0000', '2026-10-01', null);
+        $buyPrice = app(MasterPriceService::class)->create([
+            'item_id' => $item->id,
+            'price_type' => 'buy',
+            'price' => '95.0000',
+            'start_date' => '2026-10-01',
+            'end_date' => null,
+        ]);
+        $prices = app(MasterPriceService::class);
+
+        $this->assertSame($sellPrice->id, $prices->priceForDate($item->id, '2026-10-17')?->id);
+        $this->assertSame($buyPrice->id, $prices->priceForDate($item->id, '2026-10-17', type: 'buy')?->id);
+        $this->from(route('master-prices.create'))
+            ->post(route('master-prices.store'), [
+                'item_id' => $item->id,
+                'price_type' => 'buy',
+                'price' => '99.0000',
+                'start_date' => '2026-10-10',
+                'end_date' => null,
+            ])
+            ->assertSessionHasErrors('start_date');
+        $this->assertSame('125.0000', $this->get(route('sales-orders.price', [
+            'item_id' => $item->id,
+            'order_date' => '2026-10-17',
+        ]))->assertOk()->json('price'));
+        $this->assertSame('95.0000', $this->get(route('purchase-orders.price', [
+            'item_id' => $item->id,
+            'order_date' => '2026-10-17',
+        ]))->assertOk()->json('price'));
+    }
+
     public function test_sales_order_price_lookup_uses_order_date_and_does_not_expose_editable_price_input(): void
     {
         $item = Item::factory()->create(['item_type' => 'raw']);
@@ -63,6 +97,10 @@ final class MasterPriceTest extends TestCase
             ->assertOk()
             ->assertDontSee('name="lines[0][unit_price]"', false)
             ->assertSee('Master Harga');
+        $this->get(route('purchase-orders.create'))
+            ->assertOk()
+            ->assertDontSee('name="lines[0][unit_price]"', false)
+            ->assertSee('Master Harga beli');
     }
 
     public function test_sales_order_saves_master_price_snapshot_and_price_cannot_be_changed_after_use(): void

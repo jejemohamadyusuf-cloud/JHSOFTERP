@@ -31,6 +31,14 @@
             <span class="card-icon">▣</span><span class="card-title">Sales Order</span>
             <span class="card-desc">Catat pesanan pelanggan</span><span class="card-arrow">→</span>
         </a>
+        <a class="master-card" href="{{ route('purchase-orders.index') }}">
+            <span class="card-icon">▣</span><span class="card-title">Purchase Order</span>
+            <span class="card-desc">Buat pesanan pembelian dan catat penerimaan</span><span class="card-arrow">→</span>
+        </a>
+        <a class="master-card" href="{{ route('stock.index') }}">
+            <span class="card-icon">▤</span><span class="card-title">Stok</span>
+            <span class="card-desc">Lihat saldo stok dan catat adjustment masuk/keluar</span><span class="card-arrow">→</span>
+        </a>
     </div>
     <div class="note-panel"><span class="note-icon">i</span><span><strong>Urutan yang disarankan:</strong> isi satuan dan kategori, lalu gudang/lokasi, barang, pelanggan/supplier, dan terakhir BOM.</span></div>
 @endsection

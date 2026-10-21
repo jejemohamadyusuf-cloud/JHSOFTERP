@@ -14,20 +14,28 @@ JHSOFTERP adalah aplikasi ERP untuk proses pembelian, persediaan, produksi, dan 
 - Barang, kategori barang, dan satuan
 - Pelanggan dan supplier
 - Gudang dan lokasi gudang
+- Purchase Order dan penerimaan barang bertahap
+- Saldo stok per gudang/lokasi, adjustment in, dan adjustment out
+- Work Order make to order dari Sales Order dan make to stock untuk persediaan
 - Bill of Materials (BOM) beserta daftar komponennya
 - Sales Order draft, konfirmasi pesanan, dan detail baris barang
-- Master Harga per barang dengan riwayat periode berlaku
+- Master Harga jual dan beli per barang dengan riwayat periode berlaku
 
 Jalankan migrasi database dan siapkan asset frontend sebelum membuka aplikasi:
 
 ```bash
 php artisan migrate
+php artisan db:seed
 npm install
 npm run build
 php artisan serve
 ```
 
-Dashboard tersedia di `/`. BOM dikelola melalui menu **Bill of Materials**, harga melalui **Master Harga**, dan pesanan melalui **Sales Order**. Harga SO ditentukan dari Master Harga sesuai tanggal SO dan disimpan sebagai snapshot; ubah harga melalui Master Harga, bukan dari SO. Periode harga per barang tidak boleh tumpang tindih. Sales Order yang dikonfirmasi belum mengubah stok; pengurangan stok dilakukan saat delivery dan piutang dicatat saat invoice.
+`DatabaseSeeder` menjalankan `BuyPriceSeeder` setelah data master. Seeder membuat harga beli untuk barang aktif yang memiliki `standard_cost` lebih dari nol dan belum memiliki riwayat harga beli. Harga awal menggunakan tanggal `2026-10-01`; harga beli yang sudah ada tidak ditimpa. Seeder juga dapat dijalankan tersendiri dengan `php artisan db:seed --class=BuyPriceSeeder`.
+
+Dashboard tersedia di `/`. BOM dikelola melalui menu **Bill of Materials**, harga melalui **Master Harga**, pesanan pelanggan melalui **Sales Order**, dan pembelian melalui **Purchase Order**. Master Harga menyimpan periode harga jual dan beli secara terpisah untuk tiap barang; Sales Order menggunakan harga jual, sedangkan PO menggunakan harga beli yang berlaku pada tanggal PO. Harga transaksi disimpan sebagai snapshot pada baris dokumen. PO berstatus terbuka sampai semua kuantitas diterima; penerimaan parsial maupun penuh dicatat ke transaksi persediaan dan memperbarui saldo stok. Work Order mendukung make to order dari Sales Order terkonfirmasi maupun make to stock untuk barang jadi dengan BOM aktif. Penyesuaian stok manual menggunakan **Adjustment In Stock** atau **Adjustment Out Stock**; adjustment keluar dibatasi oleh stok tersedia di gudang/lokasi yang dipilih. Nomor SO, PO, penerimaan, dan adjustment stok berurutan per bulan berdasarkan tanggal dokumen. Periode harga tidak boleh tumpang tindih untuk barang dan jenis harga yang sama. Sales Order yang dikonfirmasi belum mengubah stok; pengurangan stok dilakukan saat delivery dan piutang dicatat saat invoice.
+
+Menu master dan transaksi dapat menampilkan panduan PIC berupa divisi, jabatan penginput, dan pemeriksa. Sesuaikan nama peran atau nonaktifkan panduannya di menu **Pengaturan PIC**. Panduan ini hanya untuk membantu memahami alur; belum mengaitkan transaksi dengan user, membatasi hak akses, atau menerapkan approval.
 
 ## About Laravel
 

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreignId('warehouse_id')->constrained()->restrictOnDelete();
             $table->decimal('qty_planned', 18, 4);
             $table->decimal('qty_produced', 18, 4)->default(0);
-            $table->string('status', 20)->default('released');
+            $table->string('status', 20)->default('planned');
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
             $table->text('notes')->nullable();

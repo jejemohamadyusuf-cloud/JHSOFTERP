@@ -5,6 +5,7 @@
         <div><h1>Bill of Materials</h1><p>Daftar struktur komponen untuk barang yang diproduksi.</p></div>
         <a class="button primary" href="{{ route('boms.create') }}">＋ Tambah BOM</a>
     </div>
+    <x-pic-guide module="boms" />
     <div class="table-card">
         <div class="table-toolbar"><strong>Daftar BOM</strong><span>{{ $boms->total() }} data</span></div>
         <div class="table-wrap">

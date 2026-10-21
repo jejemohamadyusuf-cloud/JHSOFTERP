@@ -7,8 +7,8 @@
 /storage/pail
 /vendor
 .env
-.env.backup
-.env.production
+.env.*
+!.env.example
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
@@ -16,6 +16,16 @@ Homestead.yaml
 npm-debug.log
 yarn-error.log
 /auth.json
+/credentials.*
+/secrets.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_ed25519
 /.fleet
 /.idea
 /.nova

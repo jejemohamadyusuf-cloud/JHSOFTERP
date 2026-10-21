@@ -11,10 +11,13 @@
                     @csrf
                     <button class="button primary" type="submit">Konfirmasi</button>
                 </form>
+            @elseif ($order->status === 'confirmed')
+                <a class="button primary" href="{{ route('work-orders.create', ['sales_order_id' => $order->id]) }}">Buat Work Order</a>
             @endif
         </div>
     </div>
     @error('status')<div class="flash error">{{ $message }}</div>@enderror
+    <x-pic-guide module="sales-orders" />
     <div class="order-summary">
         <div class="summary-card"><span>Status</span><strong><span class="status status-{{ $order->status }}">{{ ['draft' => 'Draft', 'confirmed' => 'Dikonfirmasi', 'cancelled' => 'Dibatalkan'][$order->status] ?? $order->status }}</span></strong></div>
         <div class="summary-card"><span>Pelanggan</span><strong>{{ $order->customer->code }} — {{ $order->customer->name }}</strong></div>
@@ -29,7 +32,7 @@
                     @foreach ($order->lines as $line)
                         <tr>
                             <td><strong>{{ $line->item->code }}</strong><br><span class="muted">{{ $line->item->name }}</span></td>
-                            <td>{{ number_format((float) $line->qty, 4, ',', '.') }} {{ $line->unit->code }}</td>
+                            <td>{{ number_format((float) $line->qty, 2, ',', '.') }} {{ $line->unit->code }}</td>
                             <td>Rp {{ number_format((float) $line->unit_price, 2, ',', '.') }}</td>
                             <td class="amount-col">Rp {{ number_format(round((float) $line->qty * (float) $line->unit_price, 2), 2, ',', '.') }}</td>
                         </tr>

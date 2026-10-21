@@ -31,7 +31,7 @@ final class SalesOrderRequest extends FormRequest
                 'integer',
                 Rule::exists('items', 'id')->where('is_active', true),
             ],
-            'lines.*.qty' => ['required', 'numeric', 'decimal:0,4', 'gt:0', 'max:99999999999999'],
+            'lines.*.qty' => ['required', 'numeric', 'decimal:0,2', 'gt:0', 'max:99999999999999'],
         ];
     }
 

@@ -5,6 +5,7 @@
         <div><h1>{{ $record ? 'Ubah' : 'Tambah' }} {{ $definition['label'] }}</h1><p>Isi informasi dengan benar agar data konsisten digunakan di seluruh proses.</p></div>
         <a class="button secondary" href="{{ route('master-data.index', $masterKey) }}">← Kembali</a>
     </div>
+    <x-pic-guide :module="$masterKey" />
     <form class="form-card" method="POST" action="{{ $record ? route('master-data.update', [$masterKey, $record->id]) : route('master-data.store', $masterKey) }}">
         @csrf
         @if ($record) @method('PUT') @endif

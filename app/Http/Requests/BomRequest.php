@@ -27,7 +27,7 @@ final class BomRequest extends FormRequest
             'is_active' => ['sometimes', 'boolean'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.component_item_id' => ['required', 'integer', 'distinct', 'different:item_id', Rule::exists('items', 'id')],
-            'lines.*.qty' => ['required', 'numeric', 'gt:0'],
+            'lines.*.qty' => ['required', 'numeric', 'decimal:0,2', 'gt:0'],
             'lines.*.unit_id' => ['required', 'integer', Rule::exists('units', 'id')],
             'lines.*.scrap_percent' => ['required', 'numeric', 'between:0,100'],
         ];

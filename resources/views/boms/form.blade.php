@@ -5,6 +5,7 @@
         <div><h1>{{ $bom ? 'Ubah BOM' : 'Tambah BOM' }}</h1><p>Tentukan produk, versi, dan kuantitas setiap bahan penyusun.</p></div>
         <a class="button secondary" href="{{ route('boms.index') }}">← Kembali</a>
     </div>
+    <x-pic-guide module="boms" />
     <form class="form-card" method="POST" action="{{ $bom ? route('boms.update', $bom) : route('boms.store') }}">
         @csrf
         @if ($bom) @method('PUT') @endif
@@ -32,7 +33,7 @@
         <div class="bom-lines-heading"><div><h2>Komponen bahan</h2><p>Tambahkan bahan baku atau barang setengah jadi yang digunakan.</p></div><button class="button secondary" type="button" id="add-line">＋ Tambah komponen</button></div>
         @error('lines')<div class="field-error line-error">{{ $message }}</div>@enderror
         <div class="bom-lines" id="bom-lines">
-            @php($lines = old('lines', $bom?->lines->map(fn ($line) => ['component_item_id' => $line->component_item_id, 'qty' => $line->qty, 'unit_id' => $line->unit_id, 'scrap_percent' => $line->scrap_percent])->all() ?? [['component_item_id' => '', 'qty' => '', 'unit_id' => '', 'scrap_percent' => '0']]))
+            @php($lines = old('lines', $bom?->lines->map(fn ($line) => ['component_item_id' => $line->component_item_id, 'qty' => number_format((float) $line->qty, 2, '.', ''), 'unit_id' => $line->unit_id, 'scrap_percent' => $line->scrap_percent])->all() ?? [['component_item_id' => '', 'qty' => '', 'unit_id' => '', 'scrap_percent' => '0']]))
             @foreach ($lines as $index => $line)
                 @include('boms._line', ['index' => $index, 'line' => $line, 'items' => $items, 'units' => $units])
             @endforeach

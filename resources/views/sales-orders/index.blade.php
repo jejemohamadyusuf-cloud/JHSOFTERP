@@ -5,6 +5,7 @@
         <div><h1>Sales Order</h1><p>Kelola pesanan pelanggan dan status konfirmasinya.</p></div>
         <a class="button primary" href="{{ route('sales-orders.create') }}">＋ Buat Sales Order</a>
     </div>
+    <x-pic-guide module="sales-orders" />
     <div class="table-card">
         <div class="table-toolbar"><strong>Daftar Sales Order</strong><span>{{ $orders->total() }} pesanan</span></div>
         <div class="table-wrap">

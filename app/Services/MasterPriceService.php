@@ -31,10 +31,11 @@ final class MasterPriceService
         return MasterPrice::query()->with('item')->findOrFail($id);
     }
 
-    public function priceForDate(int $itemId, string $date, bool $lock = false): ?MasterPrice
+    public function priceForDate(int $itemId, string $date, bool $lock = false, string $type = 'sell'): ?MasterPrice
     {
         $query = MasterPrice::query()
             ->where('item_id', $itemId)
+            ->where('price_type', $type)
             ->whereDate('start_date', '<=', $date)
             ->where(fn ($query) => $query
                 ->whereNull('end_date')
@@ -54,6 +55,7 @@ final class MasterPriceService
     public function create(array $attributes): MasterPrice
     {
         return DB::transaction(function () use ($attributes): MasterPrice {
+            $attributes['price_type'] ??= 'sell';
             Item::query()->lockForUpdate()->findOrFail((int) $attributes['item_id']);
             $this->ensureNoOverlap($attributes);
 
@@ -68,16 +70,18 @@ final class MasterPriceService
     {
         return DB::transaction(function () use ($id, $attributes): MasterPrice {
             $price = MasterPrice::query()->lockForUpdate()->findOrFail($id);
+            $attributes['price_type'] ??= $price->price_type;
             Item::query()->lockForUpdate()->findOrFail((int) $attributes['item_id']);
 
-            if ($price->salesOrderLines()->exists()
+            if (($price->salesOrderLines()->exists() || $price->purchaseOrderLines()->exists())
                 && (
                     (int) $attributes['item_id'] !== $price->item_id
+                    || $attributes['price_type'] !== $price->price_type
                     || $this->normalizeDecimal((string) $attributes['price']) !== $this->normalizeDecimal((string) $price->getRawOriginal('price'))
                     || $attributes['start_date'] !== $price->start_date->toDateString()
                 )) {
                 throw ValidationException::withMessages([
-                    'price' => 'Harga, barang, dan tanggal mulai tidak dapat diubah karena sudah digunakan Sales Order. Ubah tanggal akhirnya atau tambahkan harga baru.',
+                    'price' => 'Harga, jenis, barang, dan tanggal mulai tidak dapat diubah karena sudah dipakai transaksi. Ubah tanggal akhirnya atau tambahkan harga baru.',
                 ]);
             }
 
@@ -92,9 +96,9 @@ final class MasterPriceService
     {
         $price = $this->find($id);
 
-        if ($price->salesOrderLines()->exists()) {
+        if ($price->salesOrderLines()->exists() || $price->purchaseOrderLines()->exists()) {
             throw ValidationException::withMessages([
-                'delete' => 'Harga ini sudah digunakan oleh Sales Order dan tidak dapat dihapus.',
+                'delete' => 'Harga ini sudah digunakan oleh transaksi dan tidak dapat dihapus.',
             ]);
         }
 
@@ -116,6 +120,7 @@ final class MasterPriceService
     {
         $overlap = MasterPrice::query()
             ->where('item_id', (int) $attributes['item_id'])
+            ->where('price_type', $attributes['price_type'] ?? 'sell')
             ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
             ->when(
                 filled($attributes['end_date'] ?? null),

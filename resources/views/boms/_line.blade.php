@@ -11,7 +11,7 @@
     </div>
     <div class="form-field">
         <label>Kuantitas <span class="required">*</span></label>
-        <input type="number" name="lines[{{ $index }}][qty]" step="0.0001" min="0.0001" value="{{ $line['qty'] ?? '' }}" required>
+        <input type="number" name="lines[{{ $index }}][qty]" step="0.01" min="0.01" value="{{ $line['qty'] ?? '' }}" required>
         @error("lines.$index.qty")<span class="field-error">{{ $message }}</span>@enderror
     </div>
     <div class="form-field">

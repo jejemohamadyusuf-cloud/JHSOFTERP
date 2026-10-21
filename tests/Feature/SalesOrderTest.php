@@ -28,7 +28,7 @@ final class SalesOrderTest extends TestCase
             'order_date' => '2026-10-17',
             'notes' => 'Pesanan contoh',
             'lines' => [
-                ['item_id' => $item->id, 'qty' => '2.5000', 'unit_price' => '1.0000'],
+                ['item_id' => $item->id, 'qty' => '2.50', 'unit_price' => '1.0000'],
             ],
         ]);
 
@@ -37,7 +37,7 @@ final class SalesOrderTest extends TestCase
         $response->assertRedirect(route('sales-orders.show', $order));
         $this->assertSame('draft', $order->status);
         $this->assertSame('31250.00', $order->total_amount);
-        $this->assertSame('SO-20261017-', substr($order->so_number, 0, 12));
+        $this->assertSame('SO261000001', $order->so_number);
         $this->assertDatabaseHas('sales_order_lines', [
             'sales_order_id' => $order->id,
             'item_id' => $item->id,
@@ -45,6 +45,34 @@ final class SalesOrderTest extends TestCase
             'qty' => '2.5000',
         ]);
         $this->assertSame(0, InventoryTransaction::query()->count());
+    }
+
+    public function test_sales_order_number_increments_and_restarts_for_a_new_month(): void
+    {
+        $customer = Customer::factory()->create();
+        $item = Item::factory()->create();
+        $this->createPrice($item, '100.0000');
+        $service = app(SalesOrderService::class);
+
+        $first = $service->create([
+            'customer_id' => $customer->id,
+            'order_date' => '2026-10-17',
+            'lines' => [['item_id' => $item->id, 'qty' => '1']],
+        ]);
+        $second = $service->create([
+            'customer_id' => $customer->id,
+            'order_date' => '2026-10-18',
+            'lines' => [['item_id' => $item->id, 'qty' => '1']],
+        ]);
+        $nextMonth = $service->create([
+            'customer_id' => $customer->id,
+            'order_date' => '2026-11-01',
+            'lines' => [['item_id' => $item->id, 'qty' => '1']],
+        ]);
+
+        $this->assertSame('SO261000001', $first->so_number);
+        $this->assertSame('SO261000002', $second->so_number);
+        $this->assertSame('SO261100001', $nextMonth->so_number);
     }
 
     public function test_sales_order_requires_valid_customer_and_positive_quantity(): void
@@ -61,6 +89,23 @@ final class SalesOrderTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['customer_id', 'lines.0.qty']);
+        $this->assertDatabaseCount('sales_orders', 0);
+    }
+
+    public function test_sales_order_rejects_quantities_with_more_than_two_decimal_places(): void
+    {
+        $customer = Customer::factory()->create();
+        $item = Item::factory()->create();
+        $this->createPrice($item, '100.0000');
+
+        $this->from(route('sales-orders.create'))
+            ->post(route('sales-orders.store'), [
+                'customer_id' => $customer->id,
+                'order_date' => '2026-10-17',
+                'lines' => [['item_id' => $item->id, 'qty' => '1.234']],
+            ])
+            ->assertSessionHasErrors('lines.0.qty');
+
         $this->assertDatabaseCount('sales_orders', 0);
     }
 

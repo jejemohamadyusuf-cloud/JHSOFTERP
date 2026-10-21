@@ -20,5 +20,6 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->call(MasterDataSeeder::class);
+        $this->call(BuyPriceSeeder::class);
     }
 }

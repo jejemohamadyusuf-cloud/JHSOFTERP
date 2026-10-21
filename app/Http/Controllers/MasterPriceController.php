@@ -73,6 +73,28 @@ final class MasterPriceController extends Controller
         ]);
     }
 
+    public function lookupPurchaseOrderPrice(SalesOrderPriceRequest $request): JsonResponse
+    {
+        $attributes = $request->validated();
+        $price = $this->prices->priceForDate(
+            (int) $attributes['item_id'],
+            $attributes['order_date'],
+            type: 'buy',
+        );
+
+        if ($price === null) {
+            return response()->json([
+                'message' => 'Harga beli belum ditetapkan untuk barang ini pada tanggal Purchase Order tersebut.',
+            ], 404);
+        }
+
+        return response()->json([
+            'price' => $price->price,
+            'start_date' => $price->start_date->toDateString(),
+            'end_date' => $price->end_date?->toDateString(),
+        ]);
+    }
+
     private function form(?MasterPrice $price): View
     {
         return view('master-prices.form', [

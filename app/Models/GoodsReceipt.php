@@ -1,10 +1,11 @@
 <?php
 
 namespace App\Models;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class GoodsReceipt extends Model
 {
@@ -30,5 +31,10 @@ class GoodsReceipt extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(GoodsReceiptLine::class);
+    }
+
+    public function inventoryTransactions(): MorphMany
+    {
+        return $this->morphMany(InventoryTransaction::class, 'reference');
     }
 }

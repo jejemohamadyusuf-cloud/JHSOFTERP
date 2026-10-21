@@ -1,15 +1,15 @@
 <?php
 
 namespace App\Models;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WorkOrder extends Model
 {
     protected $fillable = [
-        'wo_number', 'sales_order_id', 'item_id', 'bom_id', 'warehouse_id',
+        'wo_number', 'production_type', 'sales_order_id', 'sales_order_line_id', 'item_id', 'bom_id', 'warehouse_id',
         'qty_planned', 'qty_produced', 'status', 'start_date', 'end_date', 'notes',
     ];
 
@@ -26,6 +26,11 @@ class WorkOrder extends Model
     public function salesOrder(): BelongsTo
     {
         return $this->belongsTo(SalesOrder::class);
+    }
+
+    public function salesOrderLine(): BelongsTo
+    {
+        return $this->belongsTo(SalesOrderLine::class);
     }
 
     public function item(): BelongsTo

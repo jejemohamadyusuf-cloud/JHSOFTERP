@@ -5,6 +5,7 @@
         <div><h1>{{ $definition['label'] }}</h1><p>Kelola data referensi {{ strtolower($definition['label']) }}.</p></div>
         <a class="button primary" href="{{ route('master-data.create', $masterKey) }}">＋ Tambah {{ $definition['label'] }}</a>
     </div>
+    <x-pic-guide :module="$masterKey" />
     <div class="table-card">
         <div class="table-toolbar"><strong>Daftar {{ $definition['label'] }}</strong><span>{{ $records->total() }} data</span></div>
         <div class="table-wrap">
