@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\GoodsReceiptRequest;
 use App\Http\Requests\PurchaseOrderRequest;
 use App\Services\PurchasingService;
 use Illuminate\Contracts\View\View;
@@ -42,15 +41,6 @@ final class PurchaseOrderController extends Controller
     {
         return view('purchase-orders.show', [
             'order' => $this->purchasing->find($purchaseOrder),
-            'warehouses' => $this->purchasing->activeWarehouses(),
         ]);
-    }
-
-    public function storeReceipt(GoodsReceiptRequest $request, int $purchaseOrder): RedirectResponse
-    {
-        $receipt = $this->purchasing->receive($purchaseOrder, $request->validated());
-
-        return Redirect::route('purchase-orders.show', $purchaseOrder)
-            ->with('status', "Penerimaan {$receipt->gr_number} berhasil dicatat dan stok diperbarui.");
     }
 }

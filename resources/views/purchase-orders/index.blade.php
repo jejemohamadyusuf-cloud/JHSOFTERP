@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="section-heading">
-        <div><h1>Purchase Order</h1><p>Kelola pesanan ke supplier dan penerimaan barang.</p></div>
+        <div><h1>Purchase Order</h1><p>Kelola pesanan pembelian ke supplier.</p></div>
         <a class="button primary" href="{{ route('purchase-orders.create') }}">＋ Buat PO</a>
     </div>
     <x-pic-guide module="purchase-orders" />
@@ -20,10 +20,10 @@
                             <td>{{ $order->expected_date?->format('d M Y') ?? '—' }}</td>
                             <td>Rp {{ number_format((float) $order->total_amount, 2, ',', '.') }}</td>
                             <td><span class="status status-{{ $order->status }}">{{ ['open' => 'Terbuka', 'partial' => 'Diterima sebagian', 'received' => 'Selesai', 'draft' => 'Draft'][$order->status] ?? $order->status }}</span></td>
-                            <td class="actions"><a class="button small secondary" href="{{ route('purchase-orders.show', $order) }}">Detail / Terima</a></td>
+                            <td class="actions"><a class="button small secondary" href="{{ route('purchase-orders.show', $order) }}">Detail PO</a></td>
                         </tr>
                     @empty
-                        <tr><td class="empty-state" colspan="7">Belum ada Purchase Order. Buat PO untuk supplier untuk mulai menerima barang.</td></tr>
+                        <tr><td class="empty-state" colspan="7">Belum ada Purchase Order. Buat PO untuk supplier terlebih dahulu.</td></tr>
                     @endforelse
                 </tbody>
             </table>

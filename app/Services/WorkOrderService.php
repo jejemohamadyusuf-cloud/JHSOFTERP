@@ -9,6 +9,7 @@ use App\Models\Item;
 use App\Models\SalesOrderLine;
 use App\Models\Warehouse;
 use App\Models\WorkOrder;
+use App\Models\WorkOrderMaterial;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -95,6 +96,9 @@ final class WorkOrderService
                 'bom.item',
                 'bom.lines.component.unit',
                 'bom.lines.unit',
+                'materials.item.unit',
+                'materials.location',
+                'productionEntries.qcInspections.finishedGoodsReceipts',
             ])
             ->findOrFail($id);
     }
@@ -165,7 +169,7 @@ final class WorkOrderService
 
             $orderDate = now()->toDateString();
 
-            return WorkOrder::query()->create([
+            $workOrder = WorkOrder::query()->create([
                 'wo_number' => $this->numberGenerator->next($orderDate),
                 'production_type' => $productionType,
                 'sales_order_id' => $salesOrderLine?->sales_order_id,
@@ -180,6 +184,24 @@ final class WorkOrderService
                 'end_date' => $attributes['end_date'] ?? null,
                 'notes' => $attributes['notes'] ?? null,
             ]);
+
+            foreach ($bom->lines as $line) {
+                $requiredQty = (float) $attributes['qty_planned']
+                    * (float) $line->qty
+                    * (1 + (float) $line->scrap_percent / 100);
+                $requiredQty = ceil($requiredQty * 100 - 0.000001) / 100;
+
+                WorkOrderMaterial::query()->create([
+                    'work_order_id' => $workOrder->id,
+                    'item_id' => $line->component_item_id,
+                    'warehouse_id' => $attributes['warehouse_id'],
+                    'qty_required' => number_format($requiredQty, 4, '.', ''),
+                    'qty_issued' => '0',
+                    'unit_cost' => '0',
+                ]);
+            }
+
+            return $workOrder;
         });
     }
 }

@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Bom;
+use App\Models\BomLine;
 use App\Models\Customer;
 use App\Models\InventoryTransaction;
 use App\Models\Item;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderLine;
+use App\Models\StockLevel;
 use App\Models\Warehouse;
 use App\Models\WorkOrder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-final class WorkOrderTest extends TestCase
+final class WorkOrderTest extends AuthenticatedTestCase
 {
     use RefreshDatabase;
 
@@ -108,6 +109,77 @@ final class WorkOrderTest extends TestCase
             ->assertOk()
             ->assertSee('Make to Stock')
             ->assertSee('Persediaan');
+    }
+
+    public function test_production_material_issue_qc_and_finished_goods_receipt_update_inventory(): void
+    {
+        [$salesOrderLine, $bom, $warehouse] = $this->createProductionSetup();
+        $component = Item::factory()->create(['item_type' => 'raw']);
+        BomLine::query()->create([
+            'bom_id' => $bom->id,
+            'component_item_id' => $component->id,
+            'qty' => '2.0000',
+            'unit_id' => $component->unit_id,
+            'scrap_percent' => '10.0000',
+        ]);
+        $stock = StockLevel::query()->create([
+            'item_id' => $component->id,
+            'warehouse_id' => $warehouse->id,
+            'qty_on_hand' => '10.0000',
+            'qty_reserved' => '0.0000',
+            'qty_available' => '10.0000',
+        ]);
+
+        $this->post(route('work-orders.store'), [
+            'sales_order_line_id' => $salesOrderLine->id,
+            'bom_id' => $bom->id,
+            'warehouse_id' => $warehouse->id,
+            'qty_planned' => '3.00',
+        ])->assertRedirect();
+
+        $workOrder = WorkOrder::query()->firstOrFail();
+        $this->get(route('work-orders.show', $workOrder))->assertOk();
+        $material = $workOrder->materials()->firstOrFail();
+        $this->assertSame('6.6000', $material->qty_required);
+
+        $this->post(route('work-orders.materials.issue', [$workOrder, $material]), [
+            'qty' => '6.60',
+            'issue_date' => '2026-10-22',
+        ])->assertRedirect();
+
+        $this->assertSame('3.4000', $stock->fresh()->qty_available);
+        $this->assertSame('released', $workOrder->fresh()->status);
+
+        $this->post(route('work-orders.production-entries.store', $workOrder), [
+            'production_date' => '2026-10-23',
+            'qty' => '3.00',
+            'cost' => '125.50',
+        ])->assertRedirect();
+
+        $entry = $workOrder->productionEntries()->firstOrFail();
+        $this->assertSame('completed', $workOrder->fresh()->status);
+
+        $this->post(route('work-orders.inspections.store', [$workOrder, $entry]), [
+            'inspection_date' => '2026-10-24',
+            'qty_pass' => '2.00',
+            'qty_reject' => '1.00',
+        ])->assertRedirect();
+
+        $inspection = $workOrder->qcInspections()->firstOrFail();
+        $this->assertSame('partial', $inspection->result);
+
+        $this->post(route('work-orders.receipts.store', [$workOrder, $inspection]), [
+            'receipt_date' => '2026-10-25',
+            'qty' => '2.00',
+        ])->assertRedirect();
+
+        $finishedStock = StockLevel::query()
+            ->where('item_id', $workOrder->item_id)
+            ->where('warehouse_id', $warehouse->id)
+            ->firstOrFail();
+        $this->assertSame('2.0000', $finishedStock->qty_on_hand);
+        $this->assertDatabaseCount('inventory_transactions', 2);
+        $this->get(route('work-orders.show', $workOrder))->assertOk();
     }
 
     public function test_make_to_stock_requires_an_active_finished_item_and_matching_active_bom(): void

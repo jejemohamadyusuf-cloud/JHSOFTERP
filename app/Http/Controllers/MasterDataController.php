@@ -5,22 +5,24 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\MasterDataRequest;
+use App\Models\Unit;
 use App\Services\MasterDataService;
+use App\Support\MasterDataCatalog;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 
 final class MasterDataController extends Controller
 {
-    public function __construct(private readonly MasterDataService $masterData)
-    {
-    }
+    public function __construct(private readonly MasterDataService $masterData) {}
 
     public function dashboard(): View
     {
         return view('master-data.dashboard', [
-            'masters' => \App\Support\MasterDataCatalog::all(),
+            'masters' => MasterDataCatalog::all(),
         ]);
     }
 
@@ -40,6 +42,7 @@ final class MasterDataController extends Controller
             'definition' => $this->masterData->definition($master),
             'record' => null,
             'options' => $this->options($master),
+            'conversionUnits' => $master === 'items' ? Unit::query()->orderBy('name')->get() : collect(),
         ]);
     }
 
@@ -57,6 +60,7 @@ final class MasterDataController extends Controller
             'definition' => $this->masterData->definition($master),
             'record' => $this->masterData->find($master, $record),
             'options' => $this->options($master),
+            'conversionUnits' => $master === 'items' ? Unit::query()->orderBy('name')->get() : collect(),
         ]);
     }
 
@@ -80,7 +84,7 @@ final class MasterDataController extends Controller
     }
 
     /**
-     * @return array<string, \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model>>
+     * @return array<string, Collection<int, Model>>
      */
     private function options(string $master): array
     {

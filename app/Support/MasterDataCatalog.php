@@ -37,7 +37,6 @@ final class MasterDataCatalog
                     'item_type' => ['label' => 'Jenis barang', 'type' => 'select', 'required' => true, 'options' => ['raw' => 'Bahan baku', 'semi' => 'Barang setengah jadi', 'finished' => 'Barang jadi']],
                     'category_id' => ['label' => 'Kategori', 'type' => 'relation', 'required' => false, 'model' => ItemCategory::class],
                     'unit_id' => ['label' => 'Satuan', 'type' => 'relation', 'required' => true, 'model' => Unit::class],
-                    'standard_cost' => ['label' => 'Biaya standar', 'type' => 'number', 'required' => true, 'step' => '0.0001', 'min' => 0],
                     'is_active' => ['label' => 'Aktif', 'type' => 'checkbox', 'required' => false],
                 ],
             ],
@@ -108,7 +107,7 @@ final class MasterDataCatalog
             $required = $definition['required'] ? 'required' : 'nullable';
 
             if ($definition['type'] === 'relation') {
-                $table = (new $definition['model']())->getTable();
+                $table = (new $definition['model'])->getTable();
                 $rules[$field] = [$required, 'integer', Rule::exists($table, 'id')];
 
                 continue;
@@ -121,7 +120,7 @@ final class MasterDataCatalog
             }
 
             if ($field === 'code') {
-                $table = (new $master['model']())->getTable();
+                $table = (new $master['model'])->getTable();
                 $unique = Rule::unique($table, 'code')->ignore($recordId);
 
                 if ($key === 'locations') {
@@ -158,11 +157,17 @@ final class MasterDataCatalog
             }
         }
 
+        if ($key === 'items') {
+            $rules['conversions'] = ['nullable', 'array', 'max:10'];
+            $rules['conversions.*.unit_id'] = ['required', 'integer', Rule::exists('units', 'id')];
+            $rules['conversions.*.base_units'] = ['required', 'integer', 'gt:1', 'max:1000000000'];
+        }
+
         return $rules;
     }
 
     /**
-     * @param class-string<Model> $model
+     * @param  class-string<Model>  $model
      * @return array<string, mixed>
      */
     private static function partner(string $model, string $label): array

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\WorkOrderRequest;
+use App\Models\Location;
 use App\Services\WorkOrderService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -44,8 +45,15 @@ final class WorkOrderController extends Controller
 
     public function show(int $workOrder): View
     {
+        $workOrder = $this->workOrders->find($workOrder);
+
         return view('work-orders.show', [
-            'workOrder' => $this->workOrders->find($workOrder),
+            'workOrder' => $workOrder,
+            'locations' => Location::query()
+                ->where('warehouse_id', $workOrder->warehouse_id)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 }

@@ -30,7 +30,7 @@ final class StockAdjustmentRequest extends FormRequest
             'lines.*.item_id' => ['required', 'integer', Rule::exists('items', 'id')->where('is_active', true)],
             'lines.*.warehouse_id' => ['required', 'integer', Rule::exists('warehouses', 'id')->where('is_active', true)],
             'lines.*.location_id' => ['nullable', 'integer', Rule::exists('locations', 'id')->where('is_active', true)],
-            'lines.*.qty' => ['required', 'numeric', 'decimal:0,4', 'gt:0', 'max:99999999999999'],
+            'lines.*.qty' => ['required', 'numeric', 'decimal:0,2', 'gt:0', 'max:99999999999999'],
             'lines.*.unit_cost' => [
                 Rule::requiredIf($direction === 'in'),
                 'nullable',

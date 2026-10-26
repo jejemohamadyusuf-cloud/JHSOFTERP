@@ -9,6 +9,7 @@ use App\Models\Item;
 use App\Models\Location;
 use App\Models\StockAdjustment;
 use App\Models\StockLevel;
+use App\Models\StockTake;
 use App\Models\Warehouse;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -17,7 +18,10 @@ use Illuminate\Validation\ValidationException;
 
 final class StockService
 {
-    public function __construct(private readonly InventoryNumberGenerator $numberGenerator) {}
+    public function __construct(
+        private readonly InventoryNumberGenerator $numberGenerator,
+        private readonly StockLevelService $stockLevels,
+    ) {}
 
     /**
      * @return LengthAwarePaginator<int, StockLevel>
@@ -25,7 +29,7 @@ final class StockService
     public function paginate(?string $search = null): LengthAwarePaginator
     {
         return StockLevel::query()
-            ->with(['item.unit', 'warehouse', 'location'])
+            ->with(['item.unit', 'item.unitConversions', 'warehouse', 'location'])
             ->when($search !== null && $search !== '', function ($query) use ($search): void {
                 $query->whereHas('item', fn ($items) => $items
                     ->where('code', 'like', "%{$search}%")
@@ -46,7 +50,7 @@ final class StockService
      */
     public function activeItems(): Collection
     {
-        return Item::query()->with('unit')->where('is_active', true)->orderBy('name')->get();
+        return Item::query()->with(['unit', 'unitConversions'])->where('is_active', true)->orderBy('name')->get();
     }
 
     /**
@@ -67,6 +71,132 @@ final class StockService
     public function recentAdjustments(): Collection
     {
         return StockAdjustment::query()->withCount('lines')->latest('id')->limit(10)->get();
+    }
+
+    /**
+     * @return Collection<int, StockTake>
+     */
+    public function recentStockTakes(): Collection
+    {
+        return StockTake::query()->withCount('lines')->latest('id')->limit(10)->get();
+    }
+
+    /**
+     * @return array{system_qty: string, reserved_qty: string, formatted_qty: string, base_unit: string, conversions: array<int, array{code: string, base_units: int}>}
+     */
+    public function stockTakePosition(int $itemId, int $warehouseId, ?int $locationId): array
+    {
+        $item = Item::query()->with(['unit', 'unitConversions'])->findOrFail($itemId);
+        $query = StockLevel::query()
+            ->where('item_id', $itemId)
+            ->where('warehouse_id', $warehouseId);
+        $locationId === null ? $query->whereNull('location_id') : $query->where('location_id', $locationId);
+        $level = $query->first();
+        $systemQty = (string) ($level?->qty_on_hand ?? '0');
+
+        return [
+            'system_qty' => $systemQty,
+            'reserved_qty' => (string) ($level?->qty_reserved ?? '0'),
+            'formatted_qty' => $item->formatStockQuantity($systemQty),
+            'base_unit' => $item->unit->code,
+            'conversions' => $item->unitConversions
+                ->map(fn ($conversion): array => ['code' => $conversion->unit->code, 'base_units' => $conversion->base_units])
+                ->all(),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function createStockTake(array $attributes): StockTake
+    {
+        return DB::transaction(function () use ($attributes): StockTake {
+            $stockTake = StockTake::query()->create([
+                'stock_take_number' => $this->numberGenerator->next('ST', $attributes['stock_take_date']),
+                'stock_take_date' => $attributes['stock_take_date'],
+                'notes' => $attributes['notes'] ?? null,
+            ]);
+
+            foreach ($attributes['lines'] as $index => $line) {
+                $item = Item::query()
+                    ->whereKey($line['item_id'])
+                    ->where('is_active', true)
+                    ->firstOrFail();
+                $warehouse = Warehouse::query()
+                    ->whereKey($line['warehouse_id'])
+                    ->where('is_active', true)
+                    ->firstOrFail();
+                $locationId = ($line['location_id'] ?? '') === '' ? null : (int) $line['location_id'];
+
+                if ($locationId !== null && ! Location::query()
+                    ->whereKey($locationId)
+                    ->where('warehouse_id', $warehouse->id)
+                    ->where('is_active', true)
+                    ->exists()) {
+                    throw ValidationException::withMessages([
+                        "lines.{$index}.location_id" => 'Lokasi harus aktif dan berada di gudang yang dipilih.',
+                    ]);
+                }
+
+                $levelQuery = StockLevel::query()
+                    ->where('item_id', $item->id)
+                    ->where('warehouse_id', $warehouse->id);
+                $locationId === null
+                    ? $levelQuery->whereNull('location_id')
+                    : $levelQuery->where('location_id', $locationId);
+                $level = $levelQuery->lockForUpdate()->first();
+                $systemQty = (float) ($level?->qty_on_hand ?? 0);
+                $physicalQty = (float) $line['physical_qty'];
+                $reservedQty = (float) ($level?->qty_reserved ?? 0);
+                if (abs($systemQty - (float) $line['system_qty']) >= 0.0001) {
+                    throw ValidationException::withMessages([
+                        "lines.{$index}.physical_qty" => 'Saldo sistem berubah setelah hitungan dibuat. Muat ulang saldo dan hitung kembali barang ini.',
+                    ]);
+                }
+                if ($physicalQty + 0.0000001 < $reservedQty) {
+                    throw ValidationException::withMessages([
+                        "lines.{$index}.physical_qty" => 'Stok fisik tidak boleh lebih kecil dari jumlah stok yang sudah dicadangkan.',
+                    ]);
+                }
+
+                $discrepancy = round($physicalQty - $systemQty, 4);
+                $stockTake->lines()->create([
+                    'item_id' => $item->id,
+                    'warehouse_id' => $warehouse->id,
+                    'location_id' => $locationId,
+                    'system_qty' => number_format($systemQty, 4, '.', ''),
+                    'physical_qty' => number_format($physicalQty, 4, '.', ''),
+                    'discrepancy_qty' => number_format($discrepancy, 4, '.', ''),
+                ]);
+
+                if (abs($discrepancy) < 0.0001) {
+                    continue;
+                }
+
+                $direction = $discrepancy > 0 ? 'in' : 'out';
+                $quantity = number_format(abs($discrepancy), 4, '.', '');
+                if ($direction === 'in') {
+                    $this->stockLevels->increase($item->id, $warehouse->id, $locationId, $quantity);
+                } else {
+                    $this->stockLevels->decrease($item->id, $warehouse->id, $locationId, $quantity, "lines.{$index}.physical_qty");
+                }
+
+                InventoryTransaction::query()->create([
+                    'transaction_date' => $attributes['stock_take_date'].' 00:00:00',
+                    'item_id' => $item->id,
+                    'warehouse_id' => $warehouse->id,
+                    'location_id' => $locationId,
+                    'transaction_type' => $direction,
+                    'qty' => $quantity,
+                    'unit_cost' => '0',
+                    'reference_type' => StockTake::class,
+                    'reference_id' => $stockTake->id,
+                    'notes' => $attributes['notes'] ?? null,
+                ]);
+            }
+
+            return $stockTake;
+        });
     }
 
     /**
@@ -118,9 +248,9 @@ final class StockService
                 ]);
 
                 if ($direction === 'in') {
-                    $this->increaseStock($item->id, $warehouse->id, $locationId, $qty);
+                    $this->stockLevels->increase($item->id, $warehouse->id, $locationId, $qty);
                 } else {
-                    $this->decreaseStock($item->id, $warehouse->id, $locationId, $qty, $index);
+                    $this->stockLevels->decrease($item->id, $warehouse->id, $locationId, $qty, "lines.{$index}.qty");
                 }
 
                 InventoryTransaction::query()->create([
@@ -139,58 +269,5 @@ final class StockService
 
             return $adjustment;
         });
-    }
-
-    private function decreaseStock(int $itemId, int $warehouseId, ?int $locationId, string $qty, int $lineIndex): void
-    {
-        $query = StockLevel::query()
-            ->where('item_id', $itemId)
-            ->where('warehouse_id', $warehouseId);
-        $locationId === null
-            ? $query->whereNull('location_id')
-            : $query->where('location_id', $locationId);
-
-        $level = $query->lockForUpdate()->first();
-        if ($level === null || (float) $level->qty_available + 0.0000001 < (float) $qty) {
-            throw ValidationException::withMessages([
-                "lines.{$lineIndex}.qty" => 'Kuantitas penyesuaian keluar melebihi stok tersedia pada gudang dan lokasi yang dipilih.',
-            ]);
-        }
-
-        $onHand = (float) $level->qty_on_hand - (float) $qty;
-        $level->update([
-            'qty_on_hand' => number_format($onHand, 4, '.', ''),
-            'qty_available' => number_format($onHand - (float) $level->qty_reserved, 4, '.', ''),
-        ]);
-    }
-
-    private function increaseStock(int $itemId, int $warehouseId, ?int $locationId, string $qty): void
-    {
-        $query = StockLevel::query()
-            ->where('item_id', $itemId)
-            ->where('warehouse_id', $warehouseId);
-        $locationId === null
-            ? $query->whereNull('location_id')
-            : $query->where('location_id', $locationId);
-
-        $level = $query->lockForUpdate()->first();
-        if ($level === null) {
-            StockLevel::query()->create([
-                'item_id' => $itemId,
-                'warehouse_id' => $warehouseId,
-                'location_id' => $locationId,
-                'qty_on_hand' => $qty,
-                'qty_reserved' => '0',
-                'qty_available' => $qty,
-            ]);
-
-            return;
-        }
-
-        $onHand = (float) $level->qty_on_hand + (float) $qty;
-        $level->update([
-            'qty_on_hand' => number_format($onHand, 4, '.', ''),
-            'qty_available' => number_format($onHand - (float) $level->qty_reserved, 4, '.', ''),
-        ]);
     }
 }

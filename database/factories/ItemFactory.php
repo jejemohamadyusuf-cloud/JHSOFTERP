@@ -26,7 +26,6 @@ final class ItemFactory extends Factory
             'item_type' => 'finished',
             'category_id' => null,
             'unit_id' => Unit::factory(),
-            'standard_cost' => 0,
             'is_active' => true,
         ];
     }

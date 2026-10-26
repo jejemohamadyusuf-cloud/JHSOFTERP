@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Support\MasterDataCatalog;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 final class MasterDataService
 {
@@ -39,26 +40,52 @@ final class MasterDataService
     {
         $definition = $this->definition($key);
 
-        return $definition['model']::query()->findOrFail($id);
+        $query = $definition['model']::query();
+        if ($key === 'items') {
+            $query->with('unitConversions');
+        }
+
+        return $query->findOrFail($id);
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public function create(string $key, array $attributes): Model
     {
         $definition = $this->definition($key);
 
-        return $definition['model']::query()->create($this->normalize($attributes, $definition));
+        return DB::transaction(function () use ($key, $attributes, $definition): Model {
+            $conversions = $attributes['conversions'] ?? [];
+            unset($attributes['conversions']);
+
+            $record = $definition['model']::query()->create($this->normalize($attributes, $definition));
+            if ($key === 'items') {
+                $this->syncItemConversions($record, $conversions);
+            }
+
+            return $record;
+        });
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public function update(string $key, int $id, array $attributes): Model
     {
-        $record = $this->find($key, $id);
-        $record->update($this->normalize($attributes, $this->definition($key)));
+        $record = DB::transaction(function () use ($key, $id, $attributes): Model {
+            $definition = $this->definition($key);
+            $conversions = $attributes['conversions'] ?? [];
+            unset($attributes['conversions']);
+
+            $record = $this->find($key, $id);
+            $record->update($this->normalize($attributes, $definition));
+            if ($key === 'items') {
+                $this->syncItemConversions($record, $conversions);
+            }
+
+            return $record;
+        });
 
         return $record;
     }
@@ -69,8 +96,8 @@ final class MasterDataService
     }
 
     /**
-     * @param array<string, mixed> $attributes
-     * @param array<string, mixed> $definition
+     * @param  array<string, mixed>  $attributes
+     * @param  array<string, mixed>  $definition
      * @return array<string, mixed>
      */
     private function normalize(array $attributes, array $definition): array
@@ -82,5 +109,24 @@ final class MasterDataService
         }
 
         return $attributes;
+    }
+
+    /**
+     * @param  array<int, array{unit_id: int|string, base_units: int|string}>  $conversions
+     */
+    private function syncItemConversions(Model $record, array $conversions): void
+    {
+        $record->unitConversions()->delete();
+
+        foreach ($conversions as $conversion) {
+            if (empty($conversion['unit_id']) || empty($conversion['base_units'])) {
+                continue;
+            }
+
+            $record->unitConversions()->create([
+                'unit_id' => $conversion['unit_id'],
+                'base_units' => $conversion['base_units'],
+            ]);
+        }
     }
 }

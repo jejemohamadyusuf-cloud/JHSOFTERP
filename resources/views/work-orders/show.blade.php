@@ -5,7 +5,7 @@
         <div><h1>{{ $workOrder->wo_number }}</h1><p>Work Order · Rencana produksi</p></div>
         <div class="actions">
             <a class="button secondary" href="{{ route('work-orders.index') }}">← Daftar</a>
-            @if ($workOrder->salesOrder)
+            @if ($workOrder->salesOrder && auth()->user()->hasRole('sales'))
                 <a class="button secondary" href="{{ route('sales-orders.show', $workOrder->salesOrder) }}">Sales Order</a>
             @endif
         </div>
@@ -25,5 +25,5 @@
     @if ($workOrder->notes)
         <div class="note-panel"><span class="note-icon">i</span><span><strong>Catatan:</strong> {{ $workOrder->notes }}</span></div>
     @endif
-    <div class="note-panel"><span class="note-icon">i</span><span>Work Order berstatus rencana. Stok bahan belum dicadangkan atau dikurangi, dan produksi belum dimulai.</span></div>
+    @include('work-orders.execution', ['workOrder' => $workOrder, 'locations' => $locations])
 @endsection

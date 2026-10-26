@@ -4,8 +4,11 @@
     <div class="section-heading">
         <div>
             <h1>Stok</h1>
-            <p>Saldo persediaan per barang, gudang, dan lokasi.</p>
+            <p>Saldo persediaan per barang, gudang, dan lokasi. Kuantitas disimpan dalam satuan dasar barang.</p>
         </div>
+        @if (auth()->user()->hasRole('admin', 'inventory'))
+            <a class="button primary" href="{{ route('stock-takes.create') }}">＋ Mulai Stock Take</a>
+        @endif
     </div>
     <x-pic-guide module="stock" />
     <form class="table-toolbar" method="GET" action="{{ route('stock.index') }}">
@@ -40,12 +43,9 @@
                                     class="muted">{{ $level->item->name }}</span></td>
                             <td>{{ $level->warehouse->code }} — {{ $level->warehouse->name }}</td>
                             <td>{{ $level->location?->code ?? '—' }}</td>
-                            <td>{{ number_format((float) $level->qty_available, 4, ',', '.') }}
-                                {{ $level->item->unit->code }}</td>
-                            <td>{{ number_format((float) $level->qty_reserved, 4, ',', '.') }}
-                                {{ $level->item->unit->code }}</td>
-                            <td><strong>{{ number_format((float) $level->qty_on_hand, 4, ',', '.') }}
-                                    {{ $level->item->unit->code }}</strong></td>
+                            <td>{{ $level->item->formatStockQuantity($level->qty_available) }}</td>
+                            <td>{{ $level->item->formatStockQuantity($level->qty_reserved) }}</td>
+                            <td><strong>{{ $level->item->formatStockQuantity($level->qty_on_hand) }}</strong></td>
                         </tr>
                     @empty
                         <tr>
@@ -57,6 +57,33 @@
             </table>
         </div>
         <div class="pagination">{{ $stockLevels->links() }}</div>
+    </div>
+    <div class="section-heading">
+        <div>
+            <h2>Riwayat stock take</h2>
+            <p>Sepuluh dokumen stock take terakhir.</p>
+        </div>
+    </div>
+    <div class="table-card">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Nomor dokumen</th><th>Tanggal</th><th>Baris dihitung</th><th>Catatan</th></tr>
+                </thead>
+                <tbody>
+                    @forelse ($stockTakes as $stockTake)
+                        <tr>
+                            <td><strong>{{ $stockTake->stock_take_number }}</strong></td>
+                            <td>{{ $stockTake->stock_take_date->format('d M Y') }}</td>
+                            <td>{{ $stockTake->lines_count }}</td>
+                            <td>{{ $stockTake->notes ?: '—' }}</td>
+                        </tr>
+                    @empty
+                        <tr><td class="empty-state" colspan="4">Belum ada dokumen stock take.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
     <div class="section-heading">
         <div>

@@ -137,7 +137,6 @@ final class MasterDataSeeder extends Seeder
                     'item_type' => 'raw',
                     'category_id' => $categories['BAHAN-BAKU']->id,
                     'unit_id' => $units['LEMBAR']->id,
-                    'standard_cost' => 285000,
                     'is_active' => true,
                 ],
                 [
@@ -146,7 +145,6 @@ final class MasterDataSeeder extends Seeder
                     'item_type' => 'raw',
                     'category_id' => $categories['BAHAN-BAKU']->id,
                     'unit_id' => $units['BATANG']->id,
-                    'standard_cost' => 95000,
                     'is_active' => true,
                 ],
                 [
@@ -155,7 +153,6 @@ final class MasterDataSeeder extends Seeder
                     'item_type' => 'raw',
                     'category_id' => $categories['AKSESORIS']->id,
                     'unit_id' => $units['PCS']->id,
-                    'standard_cost' => 1200,
                     'is_active' => true,
                 ],
                 [
@@ -164,7 +161,6 @@ final class MasterDataSeeder extends Seeder
                     'item_type' => 'semi',
                     'category_id' => $categories['WIP']->id,
                     'unit_id' => $units['PCS']->id,
-                    'standard_cost' => 240000,
                     'is_active' => true,
                 ],
                 [
@@ -173,7 +169,6 @@ final class MasterDataSeeder extends Seeder
                     'item_type' => 'finished',
                     'category_id' => $categories['PRODUK-JADI']->id,
                     'unit_id' => $units['PCS']->id,
-                    'standard_cost' => 675000,
                     'is_active' => true,
                 ],
             ] as $attributes) {

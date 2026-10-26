@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class GoodsReceipt extends Model
 {
     protected $fillable = [
-        'gr_number', 'purchase_order_id', 'warehouse_id', 'receipt_date', 'status', 'notes',
+        'gr_number', 'reference_number', 'purchase_order_id', 'warehouse_id', 'receipt_date', 'status', 'notes',
     ];
 
     protected function casts(): array

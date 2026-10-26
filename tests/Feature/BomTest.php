@@ -6,9 +6,8 @@ namespace Tests\Feature;
 
 use App\Models\Item;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-final class BomTest extends TestCase
+final class BomTest extends AuthenticatedTestCase
 {
     use RefreshDatabase;
 

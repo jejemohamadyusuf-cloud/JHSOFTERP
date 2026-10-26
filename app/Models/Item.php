@@ -14,13 +14,12 @@ class Item extends Model
     use HasFactory;
 
     protected $fillable = [
-        'code', 'name', 'item_type', 'category_id', 'unit_id', 'standard_cost', 'is_active',
+        'code', 'name', 'item_type', 'category_id', 'unit_id', 'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'standard_cost' => 'decimal:4',
             'is_active' => 'boolean',
         ];
     }
@@ -33,6 +32,36 @@ class Item extends Model
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);
+    }
+
+    public function unitConversions(): HasMany
+    {
+        return $this->hasMany(ItemUnitConversion::class)->with('unit')->orderByDesc('base_units');
+    }
+
+    public function formatStockQuantity(float|string $quantity): string
+    {
+        $remaining = (float) $quantity;
+        $parts = [];
+        $conversions = $this->relationLoaded('unitConversions')
+            ? $this->unitConversions
+            : $this->unitConversions()->get();
+
+        foreach ($conversions as $conversion) {
+            $count = (int) floor(($remaining + 0.0000001) / $conversion->base_units);
+            if ($count > 0) {
+                $parts[] = $count.' '.$conversion->unit->code;
+                $remaining -= $count * $conversion->base_units;
+            }
+        }
+
+        $baseQuantity = rtrim(rtrim(number_format(max(0, $remaining), 2, ',', '.'), '0'), ',');
+        if ($baseQuantity === '') {
+            $baseQuantity = '0';
+        }
+        $parts[] = $baseQuantity.' '.$this->unit->code;
+
+        return implode(' · ', $parts);
     }
 
     public function boms(): HasMany
@@ -58,5 +87,10 @@ class Item extends Model
     public function masterPrices(): HasMany
     {
         return $this->hasMany(MasterPrice::class);
+    }
+
+    public function supplierPrices(): HasMany
+    {
+        return $this->hasMany(MasterPrice::class)->where('price_type', 'buy');
     }
 }

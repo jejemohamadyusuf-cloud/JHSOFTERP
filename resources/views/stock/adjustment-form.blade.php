@@ -60,8 +60,37 @@
                 });
                 if (select.selectedOptions[0]?.disabled) select.value = '';
             };
+            const formatQuantity = (quantity, unit, conversions) => {
+                let remaining = Number(quantity);
+                const parts = [];
+                for (const conversion of conversions) {
+                    const units = Math.floor((remaining + 0.0000001) / conversion.base_units);
+                    if (units > 0) {
+                        parts.push(`${units} ${conversion.code}`);
+                        remaining -= units * conversion.base_units;
+                    }
+                }
+                const base = new Intl.NumberFormat('id-ID', {maximumFractionDigits: 4}).format(remaining);
+                parts.push(`${base} ${unit}`);
+                return parts.join(' · ');
+            };
+            const updateQuantityPreview = (row) => {
+                const selected = row.querySelector('select[name$="[item_id]"]').selectedOptions[0];
+                const quantity = row.querySelector('input[name$="[qty]"]').value;
+                const preview = row.querySelector('[data-quantity-preview]');
+                if (!selected?.value || !quantity) {
+                    preview.textContent = '';
+                    return;
+                }
+                preview.textContent = `Tampilan stok: ${formatQuantity(quantity, selected.dataset.baseUnit, JSON.parse(selected.dataset.conversions || '[]'))}`;
+            };
             container.addEventListener('change', (event) => {
-                if (event.target.matches('[data-warehouse-select]')) updateLocations(event.target.closest('.adjustment-line'));
+                const row = event.target.closest('.adjustment-line');
+                if (event.target.matches('[data-warehouse-select]')) updateLocations(row);
+                if (event.target.matches('select[name$="[item_id]"]')) updateQuantityPreview(row);
+            });
+            container.addEventListener('input', (event) => {
+                if (event.target.matches('input[name$="[qty]"]')) updateQuantityPreview(event.target.closest('.adjustment-line'));
             });
             document.getElementById('add-adjustment-line').addEventListener('click', () => {
                 const index = container.querySelectorAll('.adjustment-line').length;
@@ -70,7 +99,10 @@
             container.addEventListener('click', (event) => {
                 if (event.target.closest('.remove-line')) event.target.closest('.adjustment-line').remove();
             });
-            container.querySelectorAll('.adjustment-line').forEach(updateLocations);
+            container.querySelectorAll('.adjustment-line').forEach((row) => {
+                updateLocations(row);
+                updateQuantityPreview(row);
+            });
         })();
     </script>
 @endsection

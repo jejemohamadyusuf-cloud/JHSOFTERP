@@ -11,9 +11,8 @@ use App\Models\MasterPrice;
 use App\Models\SalesOrder;
 use App\Services\SalesOrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-final class SalesOrderTest extends TestCase
+final class SalesOrderTest extends AuthenticatedTestCase
 {
     use RefreshDatabase;
 
@@ -42,7 +41,7 @@ final class SalesOrderTest extends TestCase
             'sales_order_id' => $order->id,
             'item_id' => $item->id,
             'unit_id' => $item->unit_id,
-            'qty' => '2.5000',
+            'qty' => '2.50',
         ]);
         $this->assertSame(0, InventoryTransaction::query()->count());
     }

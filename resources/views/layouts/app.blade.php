@@ -19,29 +19,59 @@
             <nav class="sidebar-menu" id="primary-navigation" aria-label="Navigasi utama">
                 <div class="side-label">WORKSPACE</div>
                 <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><span>⌂</span> Dashboard</a>
-                <div class="side-label">DATA MASTER</div>
-                <a class="nav-link {{ request()->routeIs('pic-guides.*') ? 'active' : '' }}" href="{{ route('pic-guides.index') }}"><span>♙</span> Pengaturan PIC</a>
-                @foreach (\App\Support\MasterDataCatalog::all() as $key => $master)
-                    <a class="nav-link {{ request()->route('master') === $key ? 'active' : '' }}" href="{{ route('master-data.index', $key) }}"><span>▦</span> {{ $master['label'] }}</a>
-                @endforeach
-                <a class="nav-link {{ request()->routeIs('master-prices.*') ? 'active' : '' }}" href="{{ route('master-prices.index') }}"><span>＄</span> Master Harga</a>
-                <a class="nav-link {{ request()->routeIs('boms.*') ? 'active' : '' }}" href="{{ route('boms.index') }}"><span>◫</span> Bill of Materials</a>
-                <div class="side-label">PEMBELIAN & PERSEDIAAN</div>
-                <a class="nav-link {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}" href="{{ route('purchase-orders.index') }}"><span>▣</span> Purchase Order</a>
-                <a class="nav-link {{ request()->routeIs('stock.*') ? 'active' : '' }}" href="{{ route('stock.index') }}"><span>▤</span> Stok</a>
-                <a class="nav-link {{ request()->route('direction') === 'in' && request()->routeIs('stock.adjustments.*') ? 'active' : '' }}" href="{{ route('stock.adjustments.create', ['direction' => 'in']) }}"><span>＋</span> Adjustment In Stock</a>
-                <a class="nav-link {{ request()->route('direction') === 'out' && request()->routeIs('stock.adjustments.*') ? 'active' : '' }}" href="{{ route('stock.adjustments.create', ['direction' => 'out']) }}"><span>−</span> Adjustment Out Stock</a>
-                <div class="side-label">PENJUALAN</div>
-                <a class="nav-link {{ request()->routeIs('sales-orders.*') ? 'active' : '' }}" href="{{ route('sales-orders.index') }}"><span>▣</span> Sales Order</a>
-                <div class="side-label">PRODUKSI</div>
-                <a class="nav-link {{ request()->routeIs('work-orders.*') ? 'active' : '' }}" href="{{ route('work-orders.index') }}"><span>⚙</span> Work Order</a>
+                @if (auth()->user()->hasRole('admin'))
+                    <div class="side-label">ADMINISTRASI</div>
+                    <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}"><span>♙</span> Pengguna & Peran</a>
+                    <a class="nav-link {{ request()->routeIs('pic-guides.*') ? 'active' : '' }}" href="{{ route('pic-guides.index') }}"><span>☷</span> Pengaturan PIC</a>
+                @endif
+                @if (auth()->user()->hasRole('sales', 'inventory'))
+                    <div class="side-label">DATA MASTER</div>
+                    @foreach (\App\Support\MasterDataCatalog::all() as $key => $master)
+                        <a class="nav-link {{ request()->route('master') === $key ? 'active' : '' }}" href="{{ route('master-data.index', $key) }}"><span>▦</span> {{ $master['label'] }}</a>
+                    @endforeach
+                    <a class="nav-link {{ request()->route('priceType') === 'sell' && request()->routeIs('master-prices.*') ? 'active' : '' }}" href="{{ route('master-prices.index', ['priceType' => 'sell']) }}"><span>＄</span> Master Harga Jual</a>
+                    <a class="nav-link {{ request()->route('priceType') === 'buy' && request()->routeIs('master-prices.*') ? 'active' : '' }}" href="{{ route('master-prices.index', ['priceType' => 'buy']) }}"><span>＄</span> Master Harga Beli</a>
+                @endif
+                @if (auth()->user()->hasRole('inventory', 'production'))
+                    <div class="side-label">PERSEDIAAN & PRODUKSI</div>
+                    <a class="nav-link {{ request()->routeIs('boms.*') ? 'active' : '' }}" href="{{ route('boms.index') }}"><span>◫</span> Bill of Materials</a>
+                @endif
+                @if (auth()->user()->hasRole('inventory'))
+                    <a class="nav-link {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}" href="{{ route('purchase-orders.index') }}"><span>▣</span> Purchase Order</a>
+                    <a class="nav-link {{ request()->routeIs('receivings.*') ? 'active' : '' }}" href="{{ route('receivings.index') }}"><span>⇩</span> Receiving</a>
+                    <a class="nav-link {{ request()->routeIs('stock.*') ? 'active' : '' }}" href="{{ route('stock.index') }}"><span>▤</span> Stok</a>
+                    <a class="nav-link {{ request()->routeIs('stock-takes.*') ? 'active' : '' }}" href="{{ route('stock-takes.create') }}"><span>✓</span> Stock Take</a>
+                    <a class="nav-link {{ request()->route('direction') === 'in' && request()->routeIs('stock.adjustments.*') ? 'active' : '' }}" href="{{ route('stock.adjustments.create', ['direction' => 'in']) }}"><span>＋</span> Adjustment In Stock</a>
+                    <a class="nav-link {{ request()->route('direction') === 'out' && request()->routeIs('stock.adjustments.*') ? 'active' : '' }}" href="{{ route('stock.adjustments.create', ['direction' => 'out']) }}"><span>−</span> Adjustment Out Stock</a>
+                @endif
+                @if (auth()->user()->hasRole('sales'))
+                    <div class="side-label">PENJUALAN</div>
+                    <a class="nav-link {{ request()->routeIs('sales-orders.*') ? 'active' : '' }}" href="{{ route('sales-orders.index') }}"><span>▣</span> Sales Order</a>
+                    <a class="nav-link {{ request()->routeIs('deliveries.*') ? 'active' : '' }}" href="{{ route('deliveries.index') }}"><span>⇧</span> Delivery</a>
+                @endif
+                @if (auth()->user()->hasRole('finance'))
+                    <div class="side-label">KEUANGAN</div>
+                    <a class="nav-link {{ request()->routeIs('deliveries.*') ? 'active' : '' }}" href="{{ route('deliveries.index') }}"><span>⇧</span> Delivery</a>
+                    <a class="nav-link {{ request()->routeIs('invoices.*') ? 'active' : '' }}" href="{{ route('invoices.index') }}"><span>＄</span> Invoice & Pembayaran</a>
+                @endif
+                @if (auth()->user()->hasRole('production'))
+                    <div class="side-label">PRODUKSI</div>
+                    <a class="nav-link {{ request()->routeIs('work-orders.*') ? 'active' : '' }}" href="{{ route('work-orders.index') }}"><span>⚙</span> Work Order</a>
+                @endif
                 <div class="sidebar-foot"><span class="online-dot"></span> Sistem siap digunakan</div>
             </nav>
         </aside>
         <main class="main-panel">
             <header class="topbar">
                 <div><div class="crumb">JHSOFTERP <span>/</span> Data Master</div><div class="page-title">{{ $title ?? 'Dashboard Master' }}</div></div>
-                <div class="user-pill"><span class="avatar">A</span><span>Administrator</span></div>
+                <div class="user-pill">
+                    <span class="avatar">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span>
+                    <span>{{ auth()->user()->name }}</span>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button class="logout-button" type="submit">Keluar</button>
+                    </form>
+                </div>
             </header>
             <section class="content">
                 @if (session('status'))

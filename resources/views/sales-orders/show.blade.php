@@ -12,7 +12,12 @@
                     <button class="button primary" type="submit">Konfirmasi</button>
                 </form>
             @elseif ($order->status === 'confirmed')
-                <a class="button primary" href="{{ route('work-orders.create', ['sales_order_id' => $order->id]) }}">Buat Work Order</a>
+                @if (auth()->user()->hasRole('production'))
+                    <a class="button primary" href="{{ route('work-orders.create', ['sales_order_id' => $order->id]) }}">Buat Work Order</a>
+                @endif
+                @if (auth()->user()->hasRole('sales'))
+                    <a class="button secondary" href="{{ route('deliveries.create', ['sales_order_id' => $order->id]) }}">Buat Delivery</a>
+                @endif
             @endif
         </div>
     </div>

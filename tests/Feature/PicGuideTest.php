@@ -7,9 +7,8 @@ namespace Tests\Feature;
 use App\Models\PicGuide;
 use App\Support\PicGuideCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-final class PicGuideTest extends TestCase
+final class PicGuideTest extends AuthenticatedTestCase
 {
     use RefreshDatabase;
 

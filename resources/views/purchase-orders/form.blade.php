@@ -7,6 +7,8 @@
     </div>
     @if ($suppliers->isEmpty() || $items->isEmpty())
         <div class="note-panel"><span class="note-icon">i</span><span>Supplier aktif dan barang aktif harus tersedia sebelum PO dapat dibuat.</span></div>
+    @else
+        <div class="note-panel"><span class="note-icon">i</span><span>Daftarkan harga beli item untuk supplier di Master Harga Beli terlebih dahulu. Harga supplier lain akan ditampilkan sebagai pembanding.</span></div>
     @endif
     @error('lines')<div class="flash error">{{ $message }}</div>@enderror
     <form class="form-card" method="POST" action="{{ route('purchase-orders.store') }}">
@@ -39,7 +41,7 @@
             </div>
         </div>
         <div class="bom-lines-heading">
-            <div><h2>Barang yang dipesan</h2><p>Harga beli otomatis mengikuti Master Harga pada tanggal PO dan disimpan sebagai snapshot.</p></div>
+            <div><h2>Barang yang dipesan</h2><p>Harga supplier terpilih otomatis dimuat pada tanggal PO; harga supplier lain ditampilkan untuk perbandingan.</p></div>
             <button class="button secondary" type="button" id="add-purchase-line">＋ Tambah barang</button>
         </div>
         <div id="purchase-lines">
@@ -59,32 +61,40 @@
             const container = document.getElementById('purchase-lines');
             const template = document.getElementById('purchase-line-template').innerHTML;
             const orderDate = document.getElementById('order_date');
+            const supplier = document.getElementById('supplier_id');
             const lookupUrl = @json(route('purchase-orders.price'));
 
             const updatePrice = async (line) => {
                 const itemId = line.querySelector('[data-item-select]').value;
                 const preview = line.querySelector('[data-price-preview]');
+                const comparison = line.querySelector('[data-price-comparison]');
                 preview.textContent = 'Memuat harga beli...';
                 preview.dataset.ready = 'false';
+                comparison.textContent = '';
 
-                if (!itemId || !orderDate.value) {
-                    preview.textContent = 'Pilih barang dan tanggal PO';
+                if (!itemId || !orderDate.value || !supplier.value) {
+                    preview.textContent = 'Pilih supplier, barang, dan tanggal PO';
                     return;
                 }
 
                 const url = new URL(lookupUrl, window.location.origin);
                 url.searchParams.set('item_id', itemId);
                 url.searchParams.set('order_date', orderDate.value);
+                url.searchParams.set('supplier_id', supplier.value);
 
                 try {
                     const response = await fetch(url, { headers: { Accept: 'application/json' } });
                     const result = await response.json();
                     if (!response.ok) {
                         preview.textContent = result.message || 'Harga beli tidak ditemukan';
+                        if (result.comparisons?.length) {
+                            comparison.textContent = `Pembanding: ${result.comparisons.map((quote) => `${quote.supplier} Rp ${Number(quote.price).toLocaleString('id-ID')}`).join(' · ')}`;
+                        }
                         return;
                     }
 
-                    preview.textContent = `Rp ${Number(result.price).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+                    preview.textContent = `Harga supplier dipilih: Rp ${Number(result.price).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+                    comparison.textContent = `Pembanding: ${result.comparisons.map((quote) => `${quote.supplier}${quote.selected ? ' (dipilih)' : ''} Rp ${Number(quote.price).toLocaleString('id-ID')}`).join(' · ')}`;
                     preview.dataset.ready = 'true';
                 } catch {
                     preview.textContent = 'Harga beli gagal dimuat. Coba lagi.';
@@ -92,9 +102,22 @@
             };
 
             const refreshPrices = () => container.querySelectorAll('.purchase-line').forEach(updatePrice);
+            const filterSupplierItems = () => {
+                container.querySelectorAll('[data-item-select]').forEach((select) => {
+                    [...select.options].forEach((option) => {
+                        if (!option.value) return;
+                        const supplierIds = (option.dataset.supplierIds || '').split(',').filter(Boolean);
+                        option.hidden = !supplier.value || !supplierIds.includes(supplier.value);
+                        option.disabled = option.hidden;
+                    });
+                    if (select.selectedOptions[0]?.disabled) select.value = '';
+                });
+                refreshPrices();
+            };
             container.addEventListener('change', (event) => {
                 if (event.target.matches('[data-item-select]')) updatePrice(event.target.closest('.purchase-line'));
             });
+            supplier.addEventListener('change', filterSupplierItems);
             orderDate.addEventListener('change', refreshPrices);
             document.getElementById('add-purchase-line').addEventListener('click', () => {
                 const index = container.querySelectorAll('.purchase-line').length;
@@ -107,10 +130,10 @@
             document.querySelector('.form-card').addEventListener('submit', (event) => {
                 if ([...container.querySelectorAll('.purchase-line')].some((line) => line.querySelector('[data-price-preview]').dataset.ready !== 'true')) {
                     event.preventDefault();
-                    window.alert('Pastikan semua barang memiliki Master Harga beli yang berlaku pada tanggal PO.');
+                    window.alert('Pastikan supplier dipilih dan semua barang memiliki harga beli yang berlaku pada tanggal PO.');
                 }
             });
-            refreshPrices();
+            filterSupplierItems();
         })();
     </script>
 @endsection

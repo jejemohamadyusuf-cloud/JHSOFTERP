@@ -17,7 +17,11 @@ final class MasterPriceRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['price_type' => $this->input('price_type', 'sell')]);
+        $priceType = $this->route('priceType');
+        $this->merge([
+            'price_type' => $priceType,
+            'supplier_id' => $priceType === 'sell' ? null : $this->input('supplier_id'),
+        ]);
     }
 
     /**
@@ -27,7 +31,8 @@ final class MasterPriceRequest extends FormRequest
     {
         return [
             'item_id' => ['required', 'integer', 'exists:items,id'],
-            'price_type' => ['required', 'in:sell,buy'],
+            'price_type' => ['required', 'in:'.$this->route('priceType')],
+            'supplier_id' => ['nullable', 'required_if:price_type,buy', 'integer', 'exists:suppliers,id'],
             'price' => ['required', 'numeric', 'decimal:0,4', 'min:0', 'max:99999999999999'],
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
@@ -49,6 +54,11 @@ final class MasterPriceRequest extends FormRequest
                 $nextPriceExists = MasterPrice::query()
                     ->where('item_id', $this->integer('item_id'))
                     ->where('price_type', $this->input('price_type'))
+                    ->when(
+                        $this->input('price_type') === 'buy',
+                        fn ($query) => $query->where('supplier_id', $this->integer('supplier_id')),
+                        fn ($query) => $query->whereNull('supplier_id'),
+                    )
                     ->when(
                         $this->route('master_price'),
                         fn ($query, $id) => $query->whereKeyNot((int) $id),

@@ -22,12 +22,13 @@ final class GoodsReceiptRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'purchase_order_id' => ['required', 'integer', Rule::exists('purchase_orders', 'id')],
             'warehouse_id' => ['required', 'integer', Rule::exists('warehouses', 'id')->where('is_active', true)],
             'receipt_date' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:5000'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.purchase_order_line_id' => ['required', 'integer', 'distinct', Rule::exists('purchase_order_lines', 'id')],
-            'lines.*.qty' => ['required', 'numeric', 'decimal:0,4', 'min:0', 'max:99999999999999'],
+            'lines.*.qty' => ['required', 'numeric', 'decimal:0,2', 'min:0', 'max:99999999999999'],
             'lines.*.location_id' => ['nullable', 'integer', Rule::exists('locations', 'id')->where('is_active', true)],
         ];
     }

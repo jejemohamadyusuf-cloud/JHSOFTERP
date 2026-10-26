@@ -52,7 +52,7 @@ final class PurchasingService
      */
     public function activeItems(): Collection
     {
-        return Item::query()->with('unit')->where('is_active', true)->orderBy('name')->get();
+        return Item::query()->with(['unit', 'supplierPrices'])->where('is_active', true)->orderBy('name')->get();
     }
 
     /**
@@ -65,6 +65,37 @@ final class PurchasingService
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * @return LengthAwarePaginator<int, GoodsReceipt>
+     */
+    public function paginateReceipts(): LengthAwarePaginator
+    {
+        return GoodsReceipt::query()
+            ->with(['purchaseOrder.supplier', 'warehouse'])
+            ->withCount('lines')
+            ->latest('receipt_date')
+            ->latest('id')
+            ->paginate(15)
+            ->withQueryString();
+    }
+
+    /**
+     * @return Collection<int, PurchaseOrder>
+     */
+    public function receivableOrders(): Collection
+    {
+        return PurchaseOrder::query()
+            ->with(['supplier', 'lines.item.unit', 'lines.unit'])
+            ->whereIn('status', ['open', 'ordered', 'partial', 'draft'])
+            ->orderByDesc('order_date')
+            ->orderByDesc('id')
+            ->get()
+            ->filter(fn (PurchaseOrder $order): bool => $order->lines->contains(
+                fn (PurchaseOrderLine $line): bool => (float) $line->qty > (float) $line->qty_received,
+            ))
+            ->values();
     }
 
     public function find(int $id): PurchaseOrder
@@ -122,18 +153,19 @@ final class PurchasingService
             ]);
 
             $total = 0.0;
-            foreach ($attributes['lines'] as $line) {
+            foreach ($attributes['lines'] as $lineIndex => $line) {
                 $item = $items->get((int) $line['item_id']);
                 $masterPrice = $this->prices->priceForDate(
                     (int) $item->id,
                     $attributes['order_date'],
                     lock: true,
                     type: 'buy',
+                    supplierId: $supplier->id,
                 );
 
                 if ($masterPrice === null) {
                     throw ValidationException::withMessages([
-                        'lines' => "Harga beli {$item->code} belum tersedia pada tanggal Purchase Order.",
+                        "lines.{$lineIndex}.item_id" => "Supplier {$supplier->name} belum memiliki harga beli {$item->code} yang berlaku pada tanggal Purchase Order.",
                     ]);
                 }
 
@@ -211,11 +243,13 @@ final class PurchasingService
                 $remaining = (float) $orderLine->qty - (float) $orderLine->qty_received;
                 if ((float) $line['qty'] > $remaining + 0.0000001) {
                     throw ValidationException::withMessages([
-                        'lines.'.array_search($line, $attributes['lines'], true).'.qty' => "Kuantitas penerimaan {$orderLine->item->code} melebihi sisa PO (".number_format(max(0, $remaining), 4, ',', '.').').',
+                        'lines.'.array_search($line, $attributes['lines'], true).'.qty' => "Kuantitas penerimaan {$orderLine->item->code} melebihi sisa PO (".number_format(max(0, $remaining), 2, ',', '.').').',
                     ]);
                 }
 
-                $locationId = $line['location_id'] ?? null;
+                $locationId = isset($line['location_id']) && $line['location_id'] !== ''
+                    ? (int) $line['location_id']
+                    : null;
                 if ($locationId !== null && ! Location::query()
                     ->whereKey($locationId)
                     ->where('warehouse_id', $warehouse->id)
@@ -231,6 +265,7 @@ final class PurchasingService
 
             $receipt = GoodsReceipt::query()->create([
                 'gr_number' => $this->numberGenerator->next('GR', $attributes['receipt_date']),
+                'reference_number' => $order->po_number,
                 'purchase_order_id' => $order->id,
                 'warehouse_id' => $warehouse->id,
                 'receipt_date' => $attributes['receipt_date'],

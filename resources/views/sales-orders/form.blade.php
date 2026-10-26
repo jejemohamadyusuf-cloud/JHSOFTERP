@@ -32,7 +32,7 @@
             </div>
         </div>
         <div class="bom-lines-heading">
-            <div><h2>Barang pesanan</h2><p>Harga otomatis mengikuti Master Harga berdasarkan tanggal pesanan dan tidak dapat diubah di Sales Order.</p></div>
+            <div><h2>Barang pesanan</h2><p>Harga otomatis mengikuti Master Harga Jual berdasarkan tanggal pesanan dan tidak dapat diubah di Sales Order.</p></div>
             <button class="button secondary" type="button" id="add-sales-line">＋ Tambah barang</button>
         </div>
         @error('lines')<div class="field-error line-error">{{ $message }}</div>@enderror
@@ -106,7 +106,7 @@
             document.querySelector('.form-card').addEventListener('submit', (event) => {
                 if ([...container.querySelectorAll('.sales-line')].some((line) => line.querySelector('[data-price-preview]').dataset.ready !== 'true')) {
                     event.preventDefault();
-                    window.alert('Pastikan semua barang memiliki Master Harga yang berlaku pada tanggal pesanan.');
+                    window.alert('Pastikan semua barang memiliki Master Harga Jual yang berlaku pada tanggal pesanan.');
                 }
             });
             refreshPrices();

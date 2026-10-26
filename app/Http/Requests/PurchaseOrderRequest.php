@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Models\Supplier;
 use App\Services\MasterPriceService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -28,7 +29,7 @@ final class PurchaseOrderRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:5000'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.item_id' => ['required', 'integer', Rule::exists('items', 'id')->where('is_active', true)],
-            'lines.*.qty' => ['required', 'numeric', 'decimal:0,4', 'gt:0', 'max:99999999999999'],
+            'lines.*.qty' => ['required', 'numeric', 'decimal:0,2', 'gt:0', 'max:99999999999999'],
         ];
     }
 
@@ -42,15 +43,22 @@ final class PurchaseOrderRequest extends FormRequest
 
                 $prices = app(MasterPriceService::class);
 
+                $supplierId = (int) $this->input('supplier_id');
+                $supplier = Supplier::query()->find($supplierId);
                 foreach ($this->input('lines', []) as $index => $line) {
                     if (! is_array($line) || empty($line['item_id'])) {
                         continue;
                     }
 
-                    if ($prices->priceForDate((int) $line['item_id'], (string) $this->input('order_date'), type: 'buy') === null) {
+                    if ($prices->priceForDate(
+                        (int) $line['item_id'],
+                        (string) $this->input('order_date'),
+                        type: 'buy',
+                        supplierId: $supplierId,
+                    ) === null) {
                         $validator->errors()->add(
                             "lines.{$index}.item_id",
-                            'Master Harga belum memiliki harga beli yang berlaku pada tanggal PO ini.',
+                            'Supplier '.$supplier?->name.' belum memiliki harga beli untuk barang ini yang berlaku pada tanggal PO.',
                         );
                     }
                 }
