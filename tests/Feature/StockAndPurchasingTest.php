@@ -86,15 +86,41 @@ final class StockAndPurchasingTest extends AuthenticatedTestCase
             ->assertSee('Saldo persediaan')
             ->assertSee('1,23')
             ->assertDontSee('1,2345')
+            ->assertDontSee('Riwayat stock take')
+            ->assertDontSee('Riwayat adjustment stok')
             ->assertSee('Adjustment In')
             ->assertSee('Adjustment Out')
+            ->assertSee('data-list-select', false)
+            ->assertSee('item_id='.$item->id, false)
             ->assertSee('PIC umum (acuan belajar)');
         $this->get(route('stock.adjustments.create', ['direction' => 'in']))
             ->assertOk()
             ->assertSee('Adjustment In Stock')
             ->assertSee('step="0.01"', false);
+        $this->get(route('stock.adjustments.create', [
+            'direction' => 'in',
+            'item_id' => $item->id,
+            'warehouse_id' => $warehouse->id,
+        ]))
+            ->assertOk()
+            ->assertSee('value="'.$item->id.'"', false)
+            ->assertSee('value="'.$warehouse->id.'"', false);
+        $this->get(route('stock-takes.create', [
+            'item_id' => $item->id,
+            'warehouse_id' => $warehouse->id,
+        ]))
+            ->assertOk()
+            ->assertSee('value="'.$item->id.'" selected', false)
+            ->assertSee('value="'.$warehouse->id.'" selected', false);
         $this->get(route('stock.adjustments.create', ['direction' => 'out']))->assertOk()->assertSee('Adjustment Out Stock');
-        $this->get(route('purchase-orders.index'))->assertOk()->assertSee('Daftar Purchase Order')->assertSee('PIC umum (acuan belajar)');
+        $this->get(route('purchase-orders.index'))
+            ->assertOk()
+            ->assertSee('Daftar Purchase Order')
+            ->assertSee('data-list-static-action', false)
+            ->assertSee('data-href="'.route('purchase-orders.create').'"', false)
+            ->assertDontSee('data-list-select', false)
+            ->assertDontSee('Pilih baris ini untuk mengaktifkan tombol buat PO')
+            ->assertSee('PIC umum (acuan belajar)');
         $this->get(route('purchase-orders.create'))
             ->assertOk()
             ->assertSee('Buat Purchase Order')

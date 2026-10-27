@@ -34,8 +34,8 @@ final class StockLevelService
 
         $onHand = (float) $level->qty_on_hand + (float) $qty;
         $level->update([
-            'qty_on_hand' => number_format($onHand, 4, '.', ''),
-            'qty_available' => number_format($onHand - (float) $level->qty_reserved, 4, '.', ''),
+            'qty_on_hand' => number_format($onHand, 2, '.', ''),
+            'qty_available' => number_format($onHand - (float) $level->qty_reserved, 2, '.', ''),
         ]);
     }
 
@@ -62,8 +62,8 @@ final class StockLevelService
 
         $onHand = (float) $level->qty_on_hand - (float) $qty;
         $level->update([
-            'qty_on_hand' => number_format($onHand, 4, '.', ''),
-            'qty_available' => number_format($onHand - (float) $level->qty_reserved, 4, '.', ''),
+            'qty_on_hand' => number_format($onHand, 2, '.', ''),
+            'qty_available' => number_format($onHand - (float) $level->qty_reserved, 2, '.', ''),
         ]);
     }
 }

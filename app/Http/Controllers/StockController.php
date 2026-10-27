@@ -24,13 +24,11 @@ final class StockController extends Controller
     {
         return view('stock.index', [
             'stockLevels' => $this->stock->paginate($request->string('search')->toString()),
-            'adjustments' => $this->stock->recentAdjustments(),
-            'stockTakes' => $this->stock->recentStockTakes(),
             'search' => $request->string('search')->toString(),
         ]);
     }
 
-    public function createAdjustment(string $direction): View
+    public function createAdjustment(Request $request, string $direction): View
     {
         abort_unless(in_array($direction, ['in', 'out'], true), 404);
 
@@ -38,6 +36,13 @@ final class StockController extends Controller
             'direction' => $direction,
             'items' => $this->stock->activeItems(),
             'warehouses' => $this->stock->activeWarehouses(),
+            'initialLine' => [
+                'item_id' => $request->integer('item_id') ?: '',
+                'warehouse_id' => $request->integer('warehouse_id') ?: '',
+                'location_id' => $request->integer('location_id') ?: '',
+                'qty' => '',
+                'unit_cost' => '',
+            ],
         ]);
     }
 
@@ -51,11 +56,16 @@ final class StockController extends Controller
             ->with('status', "Adjustment {$adjustment->adjustment_number} berhasil dicatat.");
     }
 
-    public function createStockTake(): View
+    public function createStockTake(Request $request): View
     {
         return view('stock.take-form', [
             'items' => $this->stock->activeItems(),
             'warehouses' => $this->stock->activeWarehouses(),
+            'initialPosition' => [
+                'item_id' => $request->integer('item_id') ?: '',
+                'warehouse_id' => $request->integer('warehouse_id') ?: '',
+                'location_id' => $request->integer('location_id') ?: '',
+            ],
         ]);
     }
 

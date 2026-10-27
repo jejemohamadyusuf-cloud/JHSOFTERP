@@ -66,22 +66,6 @@ final class StockService
     }
 
     /**
-     * @return Collection<int, StockAdjustment>
-     */
-    public function recentAdjustments(): Collection
-    {
-        return StockAdjustment::query()->withCount('lines')->latest('id')->limit(10)->get();
-    }
-
-    /**
-     * @return Collection<int, StockTake>
-     */
-    public function recentStockTakes(): Collection
-    {
-        return StockTake::query()->withCount('lines')->latest('id')->limit(10)->get();
-    }
-
-    /**
      * @return array{system_qty: string, reserved_qty: string, formatted_qty: string, base_unit: string, conversions: array<int, array{code: string, base_units: int}>}
      */
     public function stockTakePosition(int $itemId, int $warehouseId, ?int $locationId): array
@@ -164,9 +148,9 @@ final class StockService
                     'item_id' => $item->id,
                     'warehouse_id' => $warehouse->id,
                     'location_id' => $locationId,
-                    'system_qty' => number_format($systemQty, 4, '.', ''),
-                    'physical_qty' => number_format($physicalQty, 4, '.', ''),
-                    'discrepancy_qty' => number_format($discrepancy, 4, '.', ''),
+                    'system_qty' => number_format($systemQty, 2, '.', ''),
+                    'physical_qty' => number_format($physicalQty, 2, '.', ''),
+                    'discrepancy_qty' => number_format($discrepancy, 2, '.', ''),
                 ]);
 
                 if (abs($discrepancy) < 0.0001) {
@@ -174,7 +158,7 @@ final class StockService
                 }
 
                 $direction = $discrepancy > 0 ? 'in' : 'out';
-                $quantity = number_format(abs($discrepancy), 4, '.', '');
+                $quantity = number_format(abs($discrepancy), 2, '.', '');
                 if ($direction === 'in') {
                     $this->stockLevels->increase($item->id, $warehouse->id, $locationId, $quantity);
                 } else {

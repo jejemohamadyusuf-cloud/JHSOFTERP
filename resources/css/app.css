@@ -91,6 +91,22 @@ tr:hover td { background: #fcfdfd; }
 .status-active { color: #14805f; background: #e4f7ef; }
 .status-inactive { color: #727e8b; background: #eef1f4; }
 .empty-state { padding: 42px 20px; text-align: center; color: #96a1ad; }
+.list-select-cell { width: 48px; text-align: center; }
+.list-select-cell input { width: 16px; height: 16px; accent-color: var(--peri-600); cursor: pointer; }
+.selectable-list tr:has([data-list-select]:checked) td { background: #f2f2fc; }
+.list-action-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 9px; padding: 14px 18px; border-top: 1px solid #edf0f3; }
+.list-action-hint { margin-left: auto; color: #7d8998; font-size: 11px; }
+.list-action-bar form { margin: 0; }
+.list-action-bar [data-list-dynamic-actions], .list-action-bar [data-list-standby-actions] { display: contents; }
+.list-action-bar button:disabled, .list-action-bar [aria-disabled="true"] { cursor: not-allowed; opacity: .5; }
+@media print {
+    body * { visibility: hidden !important; }
+    [data-list-print-root], [data-list-print-root] * { visibility: visible !important; }
+    [data-list-print-root] { position: absolute; inset: 0; width: 100%; }
+    [data-list-print-root] .table-toolbar, [data-list-print-root] .list-action-bar,
+    [data-list-print-root] .pagination, [data-list-print-root] .list-select-cell,
+    [data-list-print-root] tbody tr:not([data-list-print-selected]) { display: none !important; }
+}
 .pagination { padding: 12px 18px; border-top: 1px solid #edf0f3; color: #667486; font-size: 11px; }
 .pagination nav { display: flex; justify-content: space-between; }
 .pagination nav > div:first-child { display: none; }

@@ -1,17 +1,11 @@
 @extends('layouts.app', ['title' => 'Stock Take'])
 
 @section('content')
-    <div class="section-heading">
-        <div>
-            <h1>Stock Take</h1>
-            <p>Hitung fisik per barang dan lokasi. Selisih baru diterapkan setelah daftar stock take disimpan.</p>
-        </div>
-        <a class="button secondary" href="{{ route('stock.index') }}">← Daftar Stok</a>
-    </div>
     <x-pic-guide module="stock" />
 
     @if ($items->isEmpty() || $warehouses->isEmpty())
-        <div class="note-panel"><span class="note-icon">i</span><span>Barang dan gudang aktif harus tersedia untuk melakukan stock take.</span></div>
+        <div class="note-panel"><span class="note-icon">i</span><span>Barang dan gudang aktif harus tersedia untuk melakukan
+                stock take.</span></div>
     @endif
     @if ($errors->any())
         <div class="flash error">Periksa kembali data stock take. Stok belum direkonsiliasi.</div>
@@ -25,14 +19,22 @@
     <form class="form-card stock-take-card" method="POST" action="{{ route('stock-takes.store') }}" id="stock-take-form">
         @csrf
         <div class="stock-take-heading">
-            <div><h2>Daftar hitungan</h2><p>Baris yang sudah dikonfirmasi akan muncul di sini. Daftar ini dapat di-scroll.</p></div>
+            <div>
+                <h2>Daftar hitungan</h2>
+                <p>Baris yang sudah dikonfirmasi akan muncul di sini. Daftar ini dapat di-scroll.</p>
+            </div>
             <span class="stock-take-count"><span id="stock-take-count">{{ count(old('lines', [])) }}</span> barang</span>
         </div>
         <div class="table-wrap stock-take-table-wrap">
             <table class="stock-take-table">
                 <thead>
                     <tr>
-                        <th>Barang</th><th>Gudang / lokasi</th><th>Stok sistem</th><th>Stok fisik</th><th>Selisih</th><th>Aksi</th>
+                        <th>Barang</th>
+                        <th>Gudang / lokasi</th>
+                        <th>Stok sistem</th>
+                        <th>Stok fisik</th>
+                        <th>Selisih</th>
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="stock-take-rows">
@@ -42,20 +44,29 @@
                         @php($location = $warehouse?->locations->firstWhere('id', (int) ($line['location_id'] ?? 0)))
                         @php($systemQty = (float) ($line['system_qty'] ?? 0))
                         @php($physicalQty = (float) ($line['physical_qty'] ?? 0))
-                        <tr data-position="{{ $line['item_id'] }}|{{ $line['warehouse_id'] }}|{{ $line['location_id'] ?? '' }}">
+                        <tr
+                            data-position="{{ $line['item_id'] }}|{{ $line['warehouse_id'] }}|{{ $line['location_id'] ?? '' }}">
                             <td>{{ $item?->code }} — {{ $item?->name }}</td>
-                            <td>{{ $warehouse?->code }} — {{ $warehouse?->name }} / {{ $location?->code ?? 'Tanpa lokasi' }}</td>
+                            <td>{{ $warehouse?->code }} — {{ $warehouse?->name }} /
+                                {{ $location?->code ?? 'Tanpa lokasi' }}</td>
                             <td>{{ $item?->formatStockQuantity($systemQty) }}</td>
                             <td>{{ $item?->formatStockQuantity($physicalQty) }}</td>
-                            <td>{{ $item?->formatStockQuantity(abs($physicalQty - $systemQty)) }} ({{ $physicalQty >= $systemQty ? '+' : '−' }})</td>
+                            <td>{{ $item?->formatStockQuantity(abs($physicalQty - $systemQty)) }}
+                                ({{ $physicalQty >= $systemQty ? '+' : '−' }})</td>
                             <td>
-                                <button class="remove-line" type="button" data-remove-row aria-label="Hapus hitungan">×</button>
+                                <button class="remove-line" type="button" data-remove-row
+                                    aria-label="Hapus hitungan">×</button>
                                 <div hidden>
-                                    <input type="hidden" name="lines[{{ $index }}][item_id]" value="{{ $line['item_id'] }}">
-                                    <input type="hidden" name="lines[{{ $index }}][warehouse_id]" value="{{ $line['warehouse_id'] }}">
-                                    <input type="hidden" name="lines[{{ $index }}][location_id]" value="{{ $line['location_id'] ?? '' }}">
-                                    <input type="hidden" name="lines[{{ $index }}][system_qty]" value="{{ $line['system_qty'] }}">
-                                    <input type="hidden" name="lines[{{ $index }}][physical_qty]" value="{{ $line['physical_qty'] }}">
+                                    <input type="hidden" name="lines[{{ $index }}][item_id]"
+                                        value="{{ $line['item_id'] }}">
+                                    <input type="hidden" name="lines[{{ $index }}][warehouse_id]"
+                                        value="{{ $line['warehouse_id'] }}">
+                                    <input type="hidden" name="lines[{{ $index }}][location_id]"
+                                        value="{{ $line['location_id'] ?? '' }}">
+                                    <input type="hidden" name="lines[{{ $index }}][system_qty]"
+                                        value="{{ $line['system_qty'] }}">
+                                    <input type="hidden" name="lines[{{ $index }}][physical_qty]"
+                                        value="{{ $line['physical_qty'] }}">
                                 </div>
                             </td>
                         </tr>
@@ -69,7 +80,10 @@
 
         <div class="stock-take-input">
             <div class="stock-take-heading">
-                <div><h2>Input hitungan fisik</h2><p>Masukkan jumlah dalam satuan dasar. Contoh: isi 193 pcs untuk 1 dus, 9 pack, dan 3 pcs.</p></div>
+                <div>
+                    <h2>Input hitungan fisik</h2>
+                    <p>Masukkan jumlah dalam satuan dasar. Contoh: isi 193 pcs untuk 1 dus, 9 pack, dan 3 pcs.</p>
+                </div>
             </div>
             <div class="form-grid">
                 <div class="form-field">
@@ -77,7 +91,8 @@
                     <select id="count-item">
                         <option value="">Pilih barang</option>
                         @foreach ($items as $item)
-                            <option value="{{ $item->id }}">{{ $item->code }} — {{ $item->name }} ({{ $item->unit->code }})</option>
+                            <option value="{{ $item->id }}" @selected((string) $initialPosition['item_id'] === (string) $item->id)>{{ $item->code }} —
+                                {{ $item->name }} ({{ $item->unit->code }})</option>
                         @endforeach
                     </select>
                 </div>
@@ -86,7 +101,8 @@
                     <select id="count-warehouse">
                         <option value="">Pilih gudang</option>
                         @foreach ($warehouses as $warehouse)
-                            <option value="{{ $warehouse->id }}">{{ $warehouse->code }} — {{ $warehouse->name }}</option>
+                            <option value="{{ $warehouse->id }}" @selected((string) $initialPosition['warehouse_id'] === (string) $warehouse->id)>{{ $warehouse->code }} —
+                                {{ $warehouse->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -96,7 +112,8 @@
                         <option value="">Tanpa lokasi</option>
                         @foreach ($warehouses as $warehouse)
                             @foreach ($warehouse->locations as $location)
-                                <option value="{{ $location->id }}" data-warehouse-id="{{ $warehouse->id }}">{{ $location->code }} — {{ $location->name }}</option>
+                                <option value="{{ $location->id }}" data-warehouse-id="{{ $warehouse->id }}"
+                                    @selected((string) $initialPosition['location_id'] === (string) $location->id)>{{ $location->code }} — {{ $location->name }}</option>
                             @endforeach
                         @endforeach
                     </select>
@@ -107,7 +124,8 @@
                 </div>
                 <div class="form-field">
                     <label for="physical-qty">Stok fisik <span class="required">*</span></label>
-                    <input id="physical-qty" type="number" min="0" step="0.0001" placeholder="Jumlah dalam satuan dasar" disabled>
+                    <input id="physical-qty" type="number" min="0" step="0.0001"
+                        placeholder="Jumlah dalam satuan dasar" disabled>
                     <span class="muted" id="physical-qty-converted"></span>
                 </div>
                 <div class="form-field">
@@ -118,23 +136,31 @@
             </div>
             <div class="stock-take-input-actions">
                 <span class="field-error" id="stock-take-input-error" role="alert"></span>
-                <button class="button secondary" type="button" id="add-stock-take-line" disabled>OK · Tambah ke daftar</button>
+                <button class="button secondary" type="button" id="add-stock-take-line" disabled>OK · Tambah ke
+                    daftar</button>
             </div>
         </div>
 
         <div class="form-grid stock-take-document">
             <div class="form-field">
                 <label for="stock_take_date">Tanggal stock take <span class="required">*</span></label>
-                <input id="stock_take_date" name="stock_take_date" type="date" value="{{ old('stock_take_date', now()->format('Y-m-d')) }}" required>
-                @error('stock_take_date')<span class="field-error">{{ $message }}</span>@enderror
+                <input id="stock_take_date" name="stock_take_date" type="date"
+                    value="{{ old('stock_take_date', now()->format('Y-m-d')) }}" required>
+                @error('stock_take_date')
+                    <span class="field-error">{{ $message }}</span>
+                @enderror
             </div>
             <div class="form-field">
                 <label for="stock_take_notes">Catatan</label>
                 <input id="stock_take_notes" name="notes" value="{{ old('notes') }}" maxlength="5000">
-                @error('notes')<span class="field-error">{{ $message }}</span>@enderror
+                @error('notes')
+                    <span class="field-error">{{ $message }}</span>
+                @enderror
             </div>
         </div>
-        @error('lines')<span class="field-error">{{ $message }}</span>@enderror
+        @error('lines')
+            <span class="field-error">{{ $message }}</span>
+        @enderror
         <div class="form-actions">
             <a class="button secondary" href="{{ route('stock.index') }}">Batal</a>
             <button class="button primary" type="submit" @disabled($items->isEmpty() || $warehouses->isEmpty())>Simpan Stock Take</button>
@@ -172,7 +198,9 @@
                         remaining -= units * conversion.base_units;
                     }
                 }
-                const base = new Intl.NumberFormat('id-ID', {maximumFractionDigits: 4}).format(remaining);
+                const base = new Intl.NumberFormat('id-ID', {
+                    maximumFractionDigits: 4
+                }).format(remaining);
                 parts.push(`${base} ${data.base_unit}`);
                 return parts.join(' · ');
             };
@@ -186,9 +214,11 @@
                     return;
                 }
                 const difference = Number(physical.value) - Number(position.system_qty);
-                discrepancy.value = `${difference > 0 ? '+' : ''}${new Intl.NumberFormat('id-ID', {maximumFractionDigits: 4}).format(difference)}`;
+                discrepancy.value =
+                    `${difference > 0 ? '+' : ''}${new Intl.NumberFormat('id-ID', {maximumFractionDigits: 4}).format(difference)}`;
                 physicalConverted.textContent = format(physical.value, position);
-                discrepancyConverted.textContent = `Selisih: ${difference < 0 ? '−' : difference > 0 ? '+' : ''}${format(Math.abs(difference), position)}`;
+                discrepancyConverted.textContent =
+                    `Selisih: ${difference < 0 ? '−' : difference > 0 ? '+' : ''}${format(Math.abs(difference), position)}`;
                 addButton.disabled = false;
             };
             const refreshPosition = async () => {
@@ -198,13 +228,20 @@
                 systemPreview.textContent = 'Pilih barang dan gudang';
                 updateDifference();
                 if (!item.value || !warehouse.value) return;
-                const params = new URLSearchParams({item_id: item.value, warehouse_id: warehouse.value, location_id: location.value});
+                const params = new URLSearchParams({
+                    item_id: item.value,
+                    warehouse_id: warehouse.value,
+                    location_id: location.value
+                });
                 try {
                     const response = await fetch(`{{ route('stock-takes.position') }}?${params}`, {
-                        headers: {'Accept': 'application/json'},
+                        headers: {
+                            'Accept': 'application/json'
+                        },
                         credentials: 'same-origin',
                     });
-                    if (!response.ok) throw new Error('Saldo stok gagal dimuat. Periksa pilihan barang dan gudang.');
+                    if (!response.ok) throw new Error(
+                        'Saldo stok gagal dimuat. Periksa pilihan barang dan gudang.');
                     position = await response.json();
                     systemPreview.textContent = position.formatted_qty;
                     physical.disabled = false;
@@ -222,6 +259,8 @@
                 });
                 if (location.selectedOptions[0]?.disabled) location.value = '';
             };
+            updateLocations();
+            if (item.value && warehouse.value) refreshPosition();
             const addHidden = (name, value) => {
                 const input = document.createElement('input');
                 input.type = 'hidden';
@@ -296,9 +335,12 @@
                 const matching = fields.filter((field) => {
                     const prefix = field.name.match(/^lines\[(\d+)\]/)?.[1];
                     if (prefix === undefined) return false;
-                    const lineItem = form.querySelector(`input[name="lines[${prefix}][item_id]"]`)?.value;
-                    const lineWarehouse = form.querySelector(`input[name="lines[${prefix}][warehouse_id]"]`)?.value;
-                    const lineLocation = form.querySelector(`input[name="lines[${prefix}][location_id]"]`)?.value ?? '';
+                    const lineItem = form.querySelector(`input[name="lines[${prefix}][item_id]"]`)
+                        ?.value;
+                    const lineWarehouse = form.querySelector(
+                        `input[name="lines[${prefix}][warehouse_id]"]`)?.value;
+                    const lineLocation = form.querySelector(
+                        `input[name="lines[${prefix}][location_id]"]`)?.value ?? '';
                     return `${lineItem}|${lineWarehouse}|${lineLocation}` === key;
                 });
                 matching.forEach((field) => field.remove());
@@ -306,7 +348,10 @@
                 emptyRow.hidden = rows.querySelectorAll('tr[data-position]').length > 0;
             });
             item.addEventListener('change', refreshPosition);
-            warehouse.addEventListener('change', () => { updateLocations(); refreshPosition(); });
+            warehouse.addEventListener('change', () => {
+                updateLocations();
+                refreshPosition();
+            });
             location.addEventListener('change', refreshPosition);
             physical.addEventListener('input', updateDifference);
             addButton.addEventListener('click', addLine);

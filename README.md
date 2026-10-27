@@ -45,6 +45,8 @@ Master harga diakses melalui dua menu terpisah: **Master Harga Jual** hanya meng
 
 Saldo stok disimpan dalam satuan dasar barang. Pada form barang, tambahkan konversi kemasan dengan jumlah satuan dasar per kemasan (misalnya Dus = 100 pcs dan Pack = 10 pcs); tampilan stok akan menguraikan jumlah sebagai `1 dus · 9 pack · 3 pcs`, sementara nilai database dan transaksi tetap `193 pcs`. Menu **Stock Take** menampilkan saldo sistem, menerima hitungan fisik, dan menghitung selisih; klik **OK** untuk menambahkan hitungan ke daftar lalu simpan dokumen untuk merekonsiliasi saldo. Jika saldo berubah sejak hitungan dimuat, simpanan ditolak agar pengguna menghitung ulang; rekonsiliasi tidak dapat menurunkan saldo di bawah stok yang dicadangkan.
 
+Halaman daftar menempatkan tombol tambah di sisi kiri panel aksi dan tombol tersebut langsung aktif, termasuk saat daftar kosong. Aksi khusus data (misalnya ubah, detail, hapus, atau cetak) tampil di panel yang sama dan aktif setelah baris dipilih melalui radio. Untuk menerapkan pola ini pada daftar baru, gunakan `data-selectable-list` pada pembungkus daftar, `data-list-select` pada radio tiap baris, `template[data-list-actions]` untuk aksi khusus baris tersebut, dan sertakan `@include('components.list-action-panel')` di bawah tabel.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
