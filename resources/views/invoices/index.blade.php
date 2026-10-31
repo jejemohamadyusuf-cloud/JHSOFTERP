@@ -35,7 +35,9 @@
                     <tr>
                         <td class="list-select-cell">
                             <input type="radio" name="selected_invoice" data-list-select aria-label="Pilih invoice {{ $invoice->invoice_number }}">
-                            <template data-list-actions><a class="button secondary" href="{{ route('invoices.show', $invoice) }}">Detail</a></template>
+                            <template data-list-actions><a class="button secondary" href="{{ route('invoices.show', $invoice) }}">Detail</a>
+                                @include('components.cancel-transaction-form', ['type' => 'invoice', 'id' => $invoice->id])
+                            </template>
                         </td>
                         <td><strong>{{ $invoice->invoice_number }}</strong></td>
                         <td>{{ $invoice->invoice_date->format('d/m/Y') }}</td>

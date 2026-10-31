@@ -12,10 +12,10 @@
                     <button class="button primary" type="submit">Konfirmasi</button>
                 </form>
             @elseif ($order->status === 'confirmed')
-                @if (auth()->user()->hasRole('production'))
+                @if (auth()->user()->canAccess('production'))
                     <a class="button primary" href="{{ route('work-orders.create', ['sales_order_id' => $order->id]) }}">Buat Work Order</a>
                 @endif
-                @if (auth()->user()->hasRole('sales'))
+                @if (auth()->user()->hasRole('sales') && auth()->user()->canAccess('deliveries'))
                     <a class="button secondary" href="{{ route('deliveries.create', ['sales_order_id' => $order->id]) }}">Buat Delivery</a>
                 @endif
             @endif

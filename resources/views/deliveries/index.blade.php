@@ -14,7 +14,9 @@
                         <tr>
                             <td class="list-select-cell">
                                 <input type="radio" name="selected_delivery" data-list-select aria-label="Pilih delivery {{ $delivery->delivery_number }}">
-                                <template data-list-actions><a class="button secondary" href="{{ route('deliveries.show', $delivery) }}">Detail</a></template>
+                                <template data-list-actions><a class="button secondary" href="{{ route('deliveries.show', $delivery) }}">Detail</a>
+                                    @include('components.cancel-transaction-form', ['type' => 'delivery', 'id' => $delivery->id])
+                                </template>
                             </td>
                             <td><strong>{{ $delivery->delivery_number }}</strong></td>
                             <td>{{ $delivery->delivery_date->format('d/m/Y') }}</td>
@@ -30,7 +32,7 @@
                 </tbody>
             </table>
         </div>
-        @include('components.list-action-panel', ['staticActions' => auth()->user()->hasRole('sales') ? [['label' => '＋ Buat Delivery', 'url' => route('deliveries.create'), 'class' => 'primary']] : []])
+        @include('components.list-action-panel', ['staticActions' => auth()->user()->hasRole('sales') && auth()->user()->canAccess('deliveries') ? [['label' => '＋ Buat Delivery', 'url' => route('deliveries.create'), 'class' => 'primary']] : []])
         <div class="pagination">{{ $deliveries->links() }}</div>
     </div>
 @endsection

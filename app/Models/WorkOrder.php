@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WorkOrder extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'wo_number', 'production_type', 'sales_order_id', 'sales_order_line_id', 'item_id', 'bom_id', 'warehouse_id',
         'qty_planned', 'qty_produced', 'status', 'start_date', 'end_date', 'notes',

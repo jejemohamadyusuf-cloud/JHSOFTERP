@@ -28,6 +28,8 @@ final class MasterDataController extends Controller
 
     public function index(string $master): View
     {
+        $this->authorizeMaster($master);
+
         return view('master-data.index', [
             'masterKey' => $master,
             'definition' => $this->masterData->definition($master),
@@ -37,6 +39,8 @@ final class MasterDataController extends Controller
 
     public function create(string $master): View
     {
+        $this->authorizeMaster($master);
+
         return view('master-data.form', [
             'masterKey' => $master,
             'definition' => $this->masterData->definition($master),
@@ -48,6 +52,7 @@ final class MasterDataController extends Controller
 
     public function store(MasterDataRequest $request, string $master): RedirectResponse
     {
+        $this->authorizeMaster($master);
         $this->masterData->create($master, $request->validated());
 
         return Redirect::route('master-data.index', $master)->with('status', 'Data berhasil ditambahkan.');
@@ -55,6 +60,8 @@ final class MasterDataController extends Controller
 
     public function edit(string $master, int $record): View
     {
+        $this->authorizeMaster($master);
+
         return view('master-data.form', [
             'masterKey' => $master,
             'definition' => $this->masterData->definition($master),
@@ -66,6 +73,7 @@ final class MasterDataController extends Controller
 
     public function update(MasterDataRequest $request, string $master, int $record): RedirectResponse
     {
+        $this->authorizeMaster($master);
         $this->masterData->update($master, $record, $request->validated());
 
         return Redirect::route('master-data.index', $master)->with('status', 'Data berhasil diperbarui.');
@@ -73,6 +81,8 @@ final class MasterDataController extends Controller
 
     public function destroy(string $master, int $record): RedirectResponse
     {
+        $this->authorizeMaster($master);
+
         try {
             $this->masterData->delete($master, $record);
         } catch (QueryException) {
@@ -97,9 +107,33 @@ final class MasterDataController extends Controller
             }
 
             $model = $fieldDefinition['model'];
-            $options[$field] = $model::query()->orderBy('name')->get();
+            $query = $model::query()->orderBy('name');
+
+            if ($master === 'chart-of-accounts' && $field === 'parent_id') {
+                $query->where('is_header', true);
+                $recordId = request()->route('record');
+                if ($recordId) {
+                    $query->where('id', '!=', $recordId);
+                }
+            }
+
+            $options[$field] = $query->get();
         }
 
         return $options;
+    }
+
+    private function authorizeMaster(string $master): void
+    {
+        $user = auth()->user();
+        $explicitMasterDataAccess = $user !== null
+            && isset($user->permissions)
+            && in_array('master-data', $user->permissions, true);
+        $allowed = $master === 'chart-of-accounts'
+            ? $user?->canAccess('master-data') === true && $user->canAccess('finance')
+            : $user?->canAccess('master-data') === true
+                && ($user->hasRole('sales', 'inventory') || $explicitMasterDataAccess);
+
+        abort_unless($allowed, 403);
     }
 }

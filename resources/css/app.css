@@ -274,6 +274,10 @@ table tfoot th { border-top: 1px solid #e1e7eb; color: #334357; font-size: 12px;
 .auth-card .auth-session-status { margin: 0 0 16px; color: #497c61; font-size: 12px; }
 .role-form { display: flex; align-items: center; gap: 8px; }
 .role-form select { min-width: 150px; min-height: 30px; border: 1px solid #dfe3eb; border-radius: 5px; padding: 3px 7px; color: #455366; background: #fff; font-size: 11px; }
+.access-form { display: grid; gap: 8px; min-width: 230px; padding-top: 10px; }
+.access-form > strong { color: #455366; font-size: 11px; }
+.access-default, .access-options label { display: flex; align-items: center; gap: 6px; color: #657185; font-size: 11px; }
+.access-options { display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 5px 10px; }
 .onboarding-page { min-height: 100vh; color: #30334a; background: #fbfbfe; }
 .onboarding-nav { max-width: 1200px; min-height: 82px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; }
 .onboarding-nav .brand { margin: 0; }

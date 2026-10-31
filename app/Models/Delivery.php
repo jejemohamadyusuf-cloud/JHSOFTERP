@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Delivery extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'delivery_number', 'sales_order_id', 'warehouse_id', 'delivery_date', 'status', 'notes',
     ];

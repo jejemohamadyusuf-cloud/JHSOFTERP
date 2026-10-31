@@ -81,6 +81,22 @@ document.addEventListener('change', (event) => {
     appendStandbyActions(panel, firstTemplate);
 });
 
+document.addEventListener('submit', (event) => {
+    const form = event.target.closest('[data-cancel-transaction]');
+    if (!form) return;
+
+    event.preventDefault();
+    const reason = window.prompt('Masukkan alasan pembatalan:');
+    if (!reason || reason.trim().length < 5) {
+        window.alert('Alasan pembatalan minimal 5 karakter.');
+        return;
+    }
+    if (!window.confirm('Transaksi akan dibatalkan dan dampak stok/jurnal akan dibalik. Lanjutkan?')) return;
+
+    form.querySelector('[name="cancellation_reason"]').value = reason.trim();
+    form.submit();
+});
+
 document.addEventListener('click', (event) => {
     const printButton = event.target.closest('[data-list-print-action]');
     if (!printButton || printButton.disabled) return;

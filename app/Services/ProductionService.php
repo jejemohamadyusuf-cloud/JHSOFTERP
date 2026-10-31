@@ -16,7 +16,11 @@ use Illuminate\Validation\ValidationException;
 
 final class ProductionService
 {
-    public function __construct(private readonly StockLevelService $stockLevels) {}
+    public function __construct(
+        private readonly StockLevelService $stockLevels,
+        private readonly AccountingService $accounting,
+        private readonly InventoryValuationService $valuation,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $attributes
@@ -55,6 +59,7 @@ final class ProductionService
             }
 
             $qty = (string) $attributes['qty'];
+            $unitCost = $this->valuation->averageUnitCost((int) $material->item_id) ?? '0.0000';
             $this->stockLevels->decrease(
                 (int) $material->item_id,
                 (int) $material->warehouse_id,
@@ -65,20 +70,29 @@ final class ProductionService
             $material->update([
                 'location_id' => $locationId,
                 'qty_issued' => number_format((float) $material->qty_issued + (float) $qty, 4, '.', ''),
+                'unit_cost' => $unitCost,
             ]);
 
-            InventoryTransaction::query()->create([
+            $transaction = InventoryTransaction::query()->create([
                 'transaction_date' => $attributes['issue_date'].' 00:00:00',
                 'item_id' => $material->item_id,
                 'warehouse_id' => $material->warehouse_id,
                 'location_id' => $locationId,
                 'transaction_type' => 'out',
                 'qty' => $qty,
-                'unit_cost' => $material->unit_cost,
+                'unit_cost' => $unitCost,
                 'reference_type' => WorkOrderMaterial::class,
                 'reference_id' => $material->id,
                 'notes' => "Pengeluaran bahan untuk WO {$workOrder->wo_number}",
             ]);
+
+            $amountCents = AccountingService::valueCents($qty, $unitCost);
+            if ($amountCents > 0) {
+                $this->accounting->post($transaction, $attributes['issue_date'], $workOrder->wo_number, "Pengeluaran bahan WO {$workOrder->wo_number}", [
+                    ['account_code' => '1132', 'debit_cents' => $amountCents, 'credit_cents' => 0, 'description' => 'Barang dalam proses'],
+                    ['account_code' => $this->accounting->inventoryAccountCode($material->item->item_type), 'debit_cents' => 0, 'credit_cents' => $amountCents, 'description' => "Bahan baku {$material->item->name}"],
+                ]);
+            }
 
             $allIssued = ! $workOrder->materials()
                 ->whereRaw('qty_issued < qty_required')
@@ -228,6 +242,14 @@ final class ProductionService
                 'reference_id' => $receipt->id,
                 'notes' => "Penerimaan hasil produksi WO {$workOrder->wo_number}",
             ]);
+
+            $amountCents = AccountingService::valueCents((string) $receipt->qty, (string) $receipt->unit_cost);
+            if ($amountCents > 0) {
+                $this->accounting->post($receipt, $receipt->receipt_date->toDateString(), $workOrder->wo_number, "Penerimaan hasil produksi WO {$workOrder->wo_number}", [
+                    ['account_code' => '1133', 'debit_cents' => $amountCents, 'credit_cents' => 0, 'description' => "Barang jadi {$workOrder->item->name}"],
+                    ['account_code' => '1132', 'debit_cents' => 0, 'credit_cents' => $amountCents, 'description' => 'Penyelesaian barang dalam proses'],
+                ]);
+            }
 
             return $receipt;
         });

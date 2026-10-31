@@ -35,7 +35,7 @@
                                 <input type="radio" name="selected_stock_position" data-list-select
                                     aria-label="Pilih stok {{ $level->item->code }} di {{ $level->warehouse->code }}">
                                 <template data-list-actions>
-                                    @if (auth()->user()->hasRole('admin', 'inventory'))
+                                    @if (auth()->user()->canAccess('stock'))
                                         <a class="button primary"
                                             href="{{ route('stock-takes.create', ['item_id' => $level->item_id, 'warehouse_id' => $level->warehouse_id, 'location_id' => $level->location_id]) }}">Stock
                                             Take</a>
@@ -64,7 +64,7 @@
         </div>
         @include('components.list-action-panel', [
             'staticActions' =>
-                $stockLevels->isEmpty() && auth()->user()->hasRole('admin', 'inventory')
+                $stockLevels->isEmpty() && auth()->user()->canAccess('stock')
                     ? [
                         ['label' => 'Stock Take', 'url' => route('stock-takes.create'), 'class' => 'primary'],
                         [
@@ -81,5 +81,50 @@
                     : [],
         ])
         <div class="pagination">{{ $stockLevels->links() }}</div>
+    </div>
+    <div class="table-card">
+        <div class="table-toolbar"><strong>Riwayat adjustment</strong><span>{{ $adjustments->total() }} transaksi</span></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Nomor</th><th>Tanggal</th><th>Arah</th><th>Catatan</th><th>Baris</th><th></th></tr></thead>
+                <tbody>
+                    @forelse ($adjustments as $adjustment)
+                        <tr>
+                            <td><strong>{{ $adjustment->adjustment_number }}</strong></td>
+                            <td>{{ $adjustment->adjustment_date->format('d/m/Y') }}</td>
+                            <td>{{ $adjustment->direction === 'in' ? 'Masuk' : 'Keluar' }}</td>
+                            <td>{{ $adjustment->notes ?: '—' }}</td>
+                            <td>{{ $adjustment->lines_count }}</td>
+                            <td>@include('components.cancel-transaction-form', ['type' => 'stock-adjustment', 'id' => $adjustment->id])</td>
+                        </tr>
+                    @empty
+                        <tr><td class="empty-state" colspan="6">Belum ada adjustment.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination">{{ $adjustments->links() }}</div>
+    </div>
+    <div class="table-card">
+        <div class="table-toolbar"><strong>Riwayat stock take</strong><span>{{ $stockTakes->total() }} transaksi</span></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Nomor</th><th>Tanggal</th><th>Catatan</th><th>Baris</th><th></th></tr></thead>
+                <tbody>
+                    @forelse ($stockTakes as $stockTake)
+                        <tr>
+                            <td><strong>{{ $stockTake->stock_take_number }}</strong></td>
+                            <td>{{ $stockTake->stock_take_date->format('d/m/Y') }}</td>
+                            <td>{{ $stockTake->notes ?: '—' }}</td>
+                            <td>{{ $stockTake->lines_count }}</td>
+                            <td>@include('components.cancel-transaction-form', ['type' => 'stock-take', 'id' => $stockTake->id])</td>
+                        </tr>
+                    @empty
+                        <tr><td class="empty-state" colspan="5">Belum ada stock take.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination">{{ $stockTakes->links() }}</div>
     </div>
 @endsection

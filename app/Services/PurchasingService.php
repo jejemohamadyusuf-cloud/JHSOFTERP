@@ -23,6 +23,7 @@ final class PurchasingService
     public function __construct(
         private readonly InventoryNumberGenerator $numberGenerator,
         private readonly MasterPriceService $prices,
+        private readonly AccountingService $accounting,
     ) {}
 
     /**
@@ -229,6 +230,7 @@ final class PurchasingService
 
             $orderLines = $order->lines->keyBy('id');
             $receiptLines = [];
+            $journalLines = [];
 
             foreach ($attributes['lines'] as $line) {
                 $orderLine = $orderLines->get((int) $line['purchase_order_line_id']);
@@ -276,13 +278,14 @@ final class PurchasingService
             foreach ($receiptLines as [$orderLine, $line, $locationId]) {
                 $qty = (string) $line['qty'];
                 $item = $orderLine->item;
+                $unitCost = (string) $orderLine->unit_price;
 
                 $receipt->lines()->create([
                     'purchase_order_line_id' => $orderLine->id,
                     'item_id' => $item->id,
                     'location_id' => $locationId,
                     'qty' => $qty,
-                    'unit_cost' => $orderLine->unit_price,
+                    'unit_cost' => $unitCost,
                 ]);
 
                 $orderLine->update([
@@ -298,11 +301,25 @@ final class PurchasingService
                     'location_id' => $locationId,
                     'transaction_type' => 'in',
                     'qty' => $qty,
-                    'unit_cost' => $orderLine->unit_price,
+                    'unit_cost' => $unitCost,
                     'reference_type' => GoodsReceipt::class,
                     'reference_id' => $receipt->id,
                     'notes' => $attributes['notes'] ?? null,
                 ]);
+
+                $amountCents = AccountingService::valueCents($qty, $unitCost);
+                $journalLines[] = [
+                    'account_code' => $this->accounting->inventoryAccountCode($item->item_type),
+                    'debit_cents' => $amountCents,
+                    'credit_cents' => 0,
+                    'description' => "Persediaan {$item->name}",
+                ];
+                $journalLines[] = [
+                    'account_code' => '2190',
+                    'debit_cents' => 0,
+                    'credit_cents' => $amountCents,
+                    'description' => "GRNI {$item->name}",
+                ];
             }
 
             $remainingLines = PurchaseOrderLine::query()
@@ -311,6 +328,8 @@ final class PurchasingService
                 ->exists();
 
             $order->update(['status' => $remainingLines ? 'partial' : 'received']);
+
+            $this->accounting->post($receipt, $receipt->receipt_date->toDateString(), $receipt->gr_number, "Penerimaan pembelian {$receipt->gr_number}", $journalLines);
 
             return $receipt;
         });

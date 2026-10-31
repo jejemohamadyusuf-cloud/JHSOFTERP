@@ -5,7 +5,7 @@
         <div><h1>{{ $workOrder->wo_number }}</h1><p>Work Order · Rencana produksi</p></div>
         <div class="actions">
             <a class="button secondary" href="{{ route('work-orders.index') }}">← Daftar</a>
-            @if ($workOrder->salesOrder && auth()->user()->hasRole('sales'))
+            @if ($workOrder->salesOrder && auth()->user()->canAccess('sales-orders'))
                 <a class="button secondary" href="{{ route('sales-orders.show', $workOrder->salesOrder) }}">Sales Order</a>
             @endif
         </div>

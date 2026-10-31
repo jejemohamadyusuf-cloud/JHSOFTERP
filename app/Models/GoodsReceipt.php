@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GoodsReceipt extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'gr_number', 'reference_number', 'purchase_order_id', 'warehouse_id', 'receipt_date', 'status', 'notes',
     ];

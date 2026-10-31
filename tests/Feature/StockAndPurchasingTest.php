@@ -66,6 +66,10 @@ final class StockAndPurchasingTest extends AuthenticatedTestCase
             'qty' => '12.5000',
         ]);
         $this->assertInstanceOf(StockAdjustment::class, InventoryTransaction::query()->firstOrFail()->reference);
+        $this->assertDatabaseHas('general_journal_entries', [
+            'source_type' => StockAdjustment::class,
+            'reference' => 'AI261000001',
+        ]);
     }
 
     public function test_stock_and_purchase_order_pages_render(): void
@@ -86,8 +90,8 @@ final class StockAndPurchasingTest extends AuthenticatedTestCase
             ->assertSee('Saldo persediaan')
             ->assertSee('1,23')
             ->assertDontSee('1,2345')
-            ->assertDontSee('Riwayat stock take')
-            ->assertDontSee('Riwayat adjustment stok')
+            ->assertSee('Riwayat stock take')
+            ->assertSee('Riwayat adjustment')
             ->assertSee('Adjustment In')
             ->assertSee('Adjustment Out')
             ->assertSee('data-list-select', false)
@@ -303,6 +307,7 @@ final class StockAndPurchasingTest extends AuthenticatedTestCase
         $this->assertSame('5.0000', $line->fresh()->qty_received);
         $this->assertSame('5.0000', StockLevel::query()->firstOrFail()->qty_on_hand);
         $this->assertSame(2, GoodsReceipt::query()->count());
+        $this->assertDatabaseCount('general_journal_entries', 2);
         $this->assertDatabaseHas('goods_receipts', [
             'purchase_order_id' => $order->id,
             'reference_number' => $order->po_number,

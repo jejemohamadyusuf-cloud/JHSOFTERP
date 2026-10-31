@@ -20,6 +20,7 @@ JHSOFTERP adalah aplikasi ERP untuk proses pembelian, persediaan, produksi, dan 
 - Bill of Materials (BOM) beserta daftar komponennya
 - Sales Order draft, konfirmasi pesanan, dan detail baris barang
 - Master Harga Jual per barang dan Master Harga Beli per supplier-item dengan riwayat periode berlaku
+- Chart of Accounts (COA), General Journal berimbang, dan General Ledger per akun
 
 Jalankan migrasi database dan siapkan asset frontend sebelum membuka aplikasi:
 
@@ -37,6 +38,8 @@ Autentikasi menggunakan scaffold Laravel Breeze (Blade): pengguna dapat mendafta
 
 Peran yang tersedia: **Administrator** (akses penuh dan pengelolaan peran), **Penjualan** (data master, Sales Order, dan Delivery), **Persediaan & Pembelian** (data master, BOM, PO, Receiving, dan stok), **Produksi** (BOM dan Work Order), serta **Keuangan** (melihat Delivery, menerbitkan Invoice, dan mencatat pembayaran). Administrator mengatur peran melalui menu **Pengguna & Peran**; administrator tidak dapat menurunkan perannya sendiri.
 
+Peran **Keuangan** dan **Administrator** dapat mengelola akun melalui menu **Chart of Accounts (COA)**, membuat jurnal melalui **General Journal**, dan menelusuri mutasi melalui **General Ledger**. General Journal hanya menerima akun transaksi aktif dan langsung memposting jurnal ketika total debit dan kredit seimbang; jurnal yang sudah diposting tidak dapat diubah dari antarmuka. General Ledger menampilkan mutasi dan saldo berjalan berdasarkan jurnal yang diposting, dengan filter akun dan periode. Invoice dan pembayaran pelanggan, receiving pembelian, delivery/HPP, adjustment, stock take, pengeluaran material, serta penerimaan barang jadi membentuk jurnal otomatis. Posting memakai akun COA bawaan, termasuk GRNI untuk menjembatani receiving dengan invoice pembelian. Nilai HPP/pemakaian stok memakai rata-rata biaya historis; bila saldo stok tidak memiliki riwayat biaya bernilai, jurnal biaya keluar tidak dibuat sampai nilai biaya tersedia. Purchase Order dan Sales Order tidak dijurnal karena keduanya belum mengubah stok atau saldo keuangan.
+
 Alur produksi mengeluarkan material berdasarkan BOM, mencatat hasil produksi, pemeriksaan QC, lalu menerima barang jadi ke stok. Delivery mengurangi stok sesuai gudang/lokasi; invoice dibuat dari delivery dengan harga snapshot Sales Order, kemudian pembayaran dapat dicatat bertahap. Invoice saat ini tidak menghitung pajak dan satu delivery hanya dapat ditagihkan satu kali.
 
 Menu master dan transaksi dapat menampilkan panduan PIC berupa divisi, jabatan penginput, dan pemeriksa. Sesuaikan nama peran atau nonaktifkan panduannya di menu **Pengaturan PIC**. Panduan ini hanya untuk membantu memahami alur; belum mencatat user pada transaksi, membatasi hak akses berdasarkan peran, atau menerapkan approval.
@@ -44,6 +47,8 @@ Menu master dan transaksi dapat menampilkan panduan PIC berupa divisi, jabatan p
 Master harga diakses melalui dua menu terpisah: **Master Harga Jual** hanya mengelola harga per item, sedangkan **Master Harga Beli** mengelola harga per item dan supplier. Pilih menu yang sesuai sebelum menambah atau mengubah harga; jenis harga tidak dipilih dari form.
 
 Saldo stok disimpan dalam satuan dasar barang. Pada form barang, tambahkan konversi kemasan dengan jumlah satuan dasar per kemasan (misalnya Dus = 100 pcs dan Pack = 10 pcs); tampilan stok akan menguraikan jumlah sebagai `1 dus · 9 pack · 3 pcs`, sementara nilai database dan transaksi tetap `193 pcs`. Menu **Stock Take** menampilkan saldo sistem, menerima hitungan fisik, dan menghitung selisih; klik **OK** untuk menambahkan hitungan ke daftar lalu simpan dokumen untuk merekonsiliasi saldo. Jika saldo berubah sejak hitungan dimuat, simpanan ditolak agar pengguna menghitung ulang; rekonsiliasi tidak dapat menurunkan saldo di bawah stok yang dicadangkan.
+
+Transaksi yang batal dapat dibatalkan dari daftar masing-masing: Sales Order, Purchase Order, Delivery, Receiving, Invoice/pembayaran, retur, Work Order, adjustment, stock take, dan jurnal manual. Pengguna wajib mengisi alasan; sistem menyimpan audit pembatalan dan mengeluarkan transaksi operasional dari daftar aktif. Untuk transaksi yang sudah diposting, stok dan jurnal dibalik sebagai transaksi/jurnal baru. Pembatalan ditolak jika masih ada dokumen lanjutan aktif atau stok tidak cukup untuk pembalikan. Jurnal asli tetap disimpan untuk jejak audit dan ditandai dibatalkan; pengembalian uang secara fisik tetap perlu diproses sesuai prosedur kas/bank.
 
 Halaman daftar menempatkan tombol tambah di sisi kiri panel aksi dan tombol tersebut langsung aktif, termasuk saat daftar kosong. Aksi khusus data (misalnya ubah, detail, hapus, atau cetak) tampil di panel yang sama dan aktif setelah baris dipilih melalui radio. Untuk menerapkan pola ini pada daftar baru, gunakan `data-selectable-list` pada pembungkus daftar, `data-list-select` pada radio tiap baris, `template[data-list-actions]` untuk aksi khusus baris tersebut, dan sertakan `@include('components.list-action-panel')` di bawah tabel.
 

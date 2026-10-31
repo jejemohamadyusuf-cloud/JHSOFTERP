@@ -19,7 +19,7 @@ final class PaymentRequest extends FormRequest
         return [
             'payment_date' => ['required', 'date'],
             'amount' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
-            'payment_method' => ['required', Rule::in(['cash', 'transfer', 'tempo'])],
+            'payment_method' => ['required', Rule::in(['cash', 'transfer'])],
             'reference' => ['nullable', 'string', 'max:80'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ];

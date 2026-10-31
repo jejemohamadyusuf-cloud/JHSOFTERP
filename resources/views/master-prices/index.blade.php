@@ -44,7 +44,7 @@
                             @if ($priceType === 'buy')
                                 <td>{{ $price->supplier?->name ?? 'Supplier tidak tersedia' }}</td>
                             @endif
-                            <td>Rp {{ number_format((float) $price->price, 4, ',', '.') }}</td>
+                            <td>Rp {{ number_format((float) $price->price, 2, ',', '.') }}</td>
                             <td>{{ $price->start_date->format('d M Y') }}</td>
                             <td>{{ $price->end_date?->format('d M Y') ?? 'Tidak dibatasi' }}</td>
                             <td>
@@ -58,8 +58,10 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td class="empty-state" colspan="{{ $priceType === 'buy' ? 7 : 6 }}">Belum ada riwayat harga
-                            {{ $priceType === 'buy' ? 'beli' : 'jual' }}.</td></tr>
+                        <tr>
+                            <td class="empty-state" colspan="{{ $priceType === 'buy' ? 7 : 6 }}">Belum ada riwayat harga
+                                {{ $priceType === 'buy' ? 'beli' : 'jual' }}.</td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>

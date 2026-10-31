@@ -25,7 +25,9 @@
                                     aria-label="Pilih receiving {{ $receipt->reference_number }}">
                                 <template data-list-actions><a class="button secondary"
                                         href="{{ route('purchase-orders.show', $receipt->purchase_order_id) }}">Lihat
-                                        PO</a></template>
+                                        PO</a>
+                                    @include('components.cancel-transaction-form', ['type' => 'receiving', 'id' => $receipt->id])
+                                </template>
                             </td>
                             <td><strong>{{ $receipt->reference_number }}</strong></td>
                             <td>{{ $receipt->receipt_date->format('d M Y') }}</td>

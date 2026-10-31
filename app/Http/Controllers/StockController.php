@@ -7,6 +7,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StockAdjustmentRequest;
 use App\Http\Requests\StockTakeRequest;
 use App\Models\Location;
+use App\Models\StockAdjustment;
+use App\Models\StockTake;
 use App\Services\StockService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +26,8 @@ final class StockController extends Controller
     {
         return view('stock.index', [
             'stockLevels' => $this->stock->paginate($request->string('search')->toString()),
+            'adjustments' => StockAdjustment::query()->withCount('lines')->latest('adjustment_date')->latest('id')->paginate(10, ['*'], 'adjustments_page'),
+            'stockTakes' => StockTake::query()->withCount('lines')->latest('stock_take_date')->latest('id')->paginate(10, ['*'], 'stock_takes_page'),
             'search' => $request->string('search')->toString(),
         ]);
     }

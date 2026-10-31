@@ -15,7 +15,9 @@
                         <tr>
                             <td class="list-select-cell">
                                 <input type="radio" name="selected_work_order" data-list-select aria-label="Pilih Work Order {{ $workOrder->wo_number }}">
-                                <template data-list-actions><a class="button secondary" href="{{ route('work-orders.show', $workOrder) }}">Detail</a></template>
+                                <template data-list-actions><a class="button secondary" href="{{ route('work-orders.show', $workOrder) }}">Detail</a>
+                                    @include('components.cancel-transaction-form', ['type' => 'work-order', 'id' => $workOrder->id])
+                                </template>
                             </td>
                             <td><strong>{{ $workOrder->wo_number }}</strong></td>
                             <td>{{ $workOrder->production_type === 'make_to_stock' ? 'Make to Stock' : 'Make to Order' }}</td>

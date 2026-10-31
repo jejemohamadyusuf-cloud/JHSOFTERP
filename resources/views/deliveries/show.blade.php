@@ -3,7 +3,7 @@
 @section('content')
     <div class="section-heading">
         <div><h1>{{ $delivery->delivery_number }}</h1><p>Delivery · {{ $delivery->delivery_date->format('d/m/Y') }}</p></div>
-        <div class="actions"><a class="button secondary" href="{{ route('deliveries.index') }}">← Daftar delivery</a>@if (auth()->user()->hasRole('sales'))<a class="button secondary" href="{{ route('sales-orders.show', $delivery->salesOrder) }}">Sales Order</a>@endif</div>
+        <div class="actions"><a class="button secondary" href="{{ route('deliveries.index') }}">← Daftar delivery</a>@if (auth()->user()->canAccess('sales-orders'))<a class="button secondary" href="{{ route('sales-orders.show', $delivery->salesOrder) }}">Sales Order</a>@endif</div>
     </div>
     <div class="order-summary">
         <div class="summary-card"><span>Status</span><strong>Terkirim</strong></div>
@@ -23,7 +23,7 @@
         </table></div>
     </div>
     @if ($delivery->notes)<div class="note-panel"><span class="note-icon">i</span><span>{{ $delivery->notes }}</span></div>@endif
-    @if ($delivery->invoices->isEmpty() && auth()->user()->hasRole('finance'))
+    @if ($delivery->invoices->isEmpty() && auth()->user()->canAccess('finance'))
         <form class="form-card" method="POST" action="{{ route('deliveries.invoice.store', $delivery) }}">
             @csrf
             <div class="section-heading"><div><h2>Terbitkan Invoice</h2><p>Invoice mengambil kuantitas terkirim dan harga snapshot Sales Order.</p></div></div>
@@ -38,7 +38,7 @@
     @elseif ($delivery->invoices->isEmpty())
         <div class="note-panel"><span class="note-icon">i</span><span>Invoice untuk delivery ini akan dibuat oleh peran Keuangan.</span></div>
     @else
-        @if (auth()->user()->hasRole('finance'))
+        @if (auth()->user()->canAccess('finance'))
         <div class="note-panel"><span class="note-icon">i</span><span>Invoice: <a class="auth-link" href="{{ route('invoices.show', $delivery->invoices->first()) }}">{{ $delivery->invoices->first()->invoice_number }}</a></span></div>
         @else
             <div class="note-panel"><span class="note-icon">i</span><span>Invoice untuk delivery ini sudah diterbitkan.</span></div>

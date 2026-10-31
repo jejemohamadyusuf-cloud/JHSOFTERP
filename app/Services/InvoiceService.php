@@ -14,7 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 final class InvoiceService
 {
-    public function __construct(private readonly InventoryNumberGenerator $numberGenerator) {}
+    public function __construct(
+        private readonly InventoryNumberGenerator $numberGenerator,
+        private readonly AccountingService $accounting,
+    ) {}
 
     /**
      * @return LengthAwarePaginator<int, Invoice>
@@ -81,6 +84,11 @@ final class InvoiceService
 
             $invoice->update(['total_amount' => number_format($totalCents / 100, 2, '.', '')]);
 
+            $this->accounting->post($invoice, $invoice->invoice_date->toDateString(), $invoice->invoice_number, "Invoice penjualan {$invoice->invoice_number}", [
+                ['account_code' => '1120', 'debit_cents' => $totalCents, 'credit_cents' => 0, 'description' => 'Piutang usaha'],
+                ['account_code' => '4100', 'debit_cents' => 0, 'credit_cents' => $totalCents, 'description' => 'Pendapatan penjualan'],
+            ]);
+
             return $invoice;
         });
     }
@@ -110,6 +118,12 @@ final class InvoiceService
             $invoice->update([
                 'paid_amount' => number_format($paidCents / 100, 2, '.', ''),
                 'status' => $paidCents >= $this->toCents($invoice->total_amount) ? 'paid' : 'partial',
+            ]);
+
+            $amountCents = $this->toCents((string) $payment->amount);
+            $this->accounting->post($payment, $payment->payment_date->toDateString(), $payment->reference ?: $invoice->invoice_number, "Pembayaran invoice {$invoice->invoice_number}", [
+                ['account_code' => $this->accounting->cashAccountCode($payment->payment_method), 'debit_cents' => $amountCents, 'credit_cents' => 0, 'description' => 'Penerimaan pembayaran'],
+                ['account_code' => '1120', 'debit_cents' => 0, 'credit_cents' => $amountCents, 'description' => 'Pelunasan piutang'],
             ]);
 
             return $payment;

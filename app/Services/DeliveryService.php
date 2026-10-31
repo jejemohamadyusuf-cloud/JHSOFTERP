@@ -21,6 +21,8 @@ final class DeliveryService
     public function __construct(
         private readonly InventoryNumberGenerator $numberGenerator,
         private readonly StockLevelService $stockLevels,
+        private readonly AccountingService $accounting,
+        private readonly InventoryValuationService $valuation,
     ) {}
 
     /**
@@ -95,6 +97,7 @@ final class DeliveryService
             ]);
 
             $requested = [];
+            $journalLines = [];
             foreach ($attributes['lines'] as $index => $lineAttributes) {
                 $line = SalesOrderLine::query()
                     ->where('sales_order_id', $salesOrder->id)
@@ -146,6 +149,8 @@ final class DeliveryService
                     'qty' => $qty,
                 ]);
 
+                $unitCost = $this->valuation->averageUnitCost((int) $line->item_id) ?? '0.0000';
+                $amountCents = AccountingService::valueCents($qty, $unitCost);
                 InventoryTransaction::query()->create([
                     'transaction_date' => $attributes['delivery_date'].' 00:00:00',
                     'item_id' => $line->item_id,
@@ -153,12 +158,29 @@ final class DeliveryService
                     'location_id' => $locationId,
                     'transaction_type' => 'out',
                     'qty' => $qty,
-                    'unit_cost' => '0',
+                    'unit_cost' => $unitCost,
                     'reference_type' => DeliveryLine::class,
                     'reference_id' => $deliveryLine->id,
                     'notes' => "Pengiriman {$delivery->delivery_number}",
                 ]);
+
+                if ($amountCents > 0) {
+                    $journalLines[] = [
+                        'account_code' => '5100',
+                        'debit_cents' => $amountCents,
+                        'credit_cents' => 0,
+                        'description' => "HPP {$line->item->name}",
+                    ];
+                    $journalLines[] = [
+                        'account_code' => $this->accounting->inventoryAccountCode($line->item->item_type),
+                        'debit_cents' => 0,
+                        'credit_cents' => $amountCents,
+                        'description' => "Pengeluaran persediaan {$line->item->name}",
+                    ];
+                }
             }
+
+            $this->accounting->post($delivery, $delivery->delivery_date->toDateString(), $delivery->delivery_number, "HPP delivery {$delivery->delivery_number}", $journalLines);
 
             return $delivery;
         });

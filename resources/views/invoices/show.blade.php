@@ -26,12 +26,12 @@
     <div class="section-heading"><div><h2>Pembayaran</h2><p>Catat pembayaran parsial atau pelunasan.</p></div></div>
     <div class="table-card">
         <div class="table-wrap"><table>
-            <thead><tr><th>Tanggal</th><th>Metode</th><th>Referensi</th><th>Jumlah</th><th>Catatan</th></tr></thead>
+            <thead><tr><th>Tanggal</th><th>Metode</th><th>Referensi</th><th>Jumlah</th><th>Catatan</th><th></th></tr></thead>
             <tbody>
                 @forelse ($invoice->payments as $payment)
-                    <tr><td>{{ $payment->payment_date->format('d/m/Y') }}</td><td>{{ ucfirst($payment->payment_method) }}</td><td>{{ $payment->reference ?? '—' }}</td><td>Rp {{ number_format((float) $payment->amount, 2, ',', '.') }}</td><td>{{ $payment->notes ?? '—' }}</td></tr>
+                    <tr><td>{{ $payment->payment_date->format('d/m/Y') }}</td><td>{{ ucfirst($payment->payment_method) }}</td><td>{{ $payment->reference ?? '—' }}</td><td>Rp {{ number_format((float) $payment->amount, 2, ',', '.') }}</td><td>{{ $payment->notes ?? '—' }}</td><td>@include('components.cancel-transaction-form', ['type' => 'payment', 'id' => $payment->id])</td></tr>
                 @empty
-                    <tr><td colspan="5" class="empty-state">Belum ada pembayaran.</td></tr>
+                    <tr><td colspan="6" class="empty-state">Belum ada pembayaran.</td></tr>
                 @endforelse
             </tbody>
         </table></div>
@@ -42,7 +42,7 @@
             <div class="form-grid">
                 <div class="form-field"><label for="payment_date">Tanggal pembayaran</label><input id="payment_date" name="payment_date" type="date" value="{{ now()->toDateString() }}" required></div>
                 <div class="form-field"><label for="amount">Jumlah</label><input id="amount" name="amount" type="number" min="0.01" max="{{ number_format((float) $invoice->total_amount - (float) $invoice->paid_amount, 2, '.', '') }}" step="0.01" required></div>
-                <div class="form-field"><label for="payment_method">Metode</label><select id="payment_method" name="payment_method" required><option value="cash">Tunai</option><option value="transfer">Transfer</option><option value="tempo">Tempo</option></select></div>
+                <div class="form-field"><label for="payment_method">Metode</label><select id="payment_method" name="payment_method" required><option value="cash">Tunai</option><option value="transfer">Transfer</option></select></div>
                 <div class="form-field"><label for="reference">Referensi</label><input id="reference" name="reference" type="text" maxlength="80"></div>
                 <div class="form-field full-width"><label for="payment_notes">Catatan</label><textarea id="payment_notes" name="notes" rows="2"></textarea></div>
             </div>

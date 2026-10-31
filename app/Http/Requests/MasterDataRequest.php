@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Models\ChartOfAccount;
 use App\Support\MasterDataCatalog;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -27,6 +28,29 @@ final class MasterDataRequest extends FormRequest
 
     public function after(): array
     {
+        if ($this->route('master') === 'chart-of-accounts') {
+            return [
+                function (Validator $validator): void {
+                    $recordId = (int) $this->route('record');
+                    $parentId = $this->input('parent_id');
+                    if (! $recordId || ! $parentId) {
+                        return;
+                    }
+
+                    $ancestor = ChartOfAccount::query()->find($parentId);
+                    while ($ancestor !== null) {
+                        if ($ancestor->id === $recordId) {
+                            $validator->errors()->add('parent_id', 'Induk akun tidak boleh menjadi akun itu sendiri atau turunannya.');
+
+                            return;
+                        }
+
+                        $ancestor = $ancestor->parent;
+                    }
+                },
+            ];
+        }
+
         if ($this->route('master') !== 'items') {
             return [];
         }

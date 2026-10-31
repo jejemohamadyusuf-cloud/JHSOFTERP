@@ -40,6 +40,12 @@
                                             class="status {{ $value ? 'status-active' : 'status-inactive' }}">{{ $value ? 'Aktif' : 'Nonaktif' }}</span>
                                     @elseif ($field === 'item_type')
                                         {{ ['raw' => 'Bahan baku', 'semi' => 'Setengah jadi', 'finished' => 'Barang jadi'][$value] ?? $value }}
+                                    @elseif ($field === 'account_type')
+                                        {{ ['asset' => 'Aset', 'liability' => 'Liabilitas', 'equity' => 'Ekuitas', 'revenue' => 'Pendapatan', 'expense' => 'Beban'][$value] ?? $value }}
+                                    @elseif ($field === 'normal_balance')
+                                        {{ $value === 'debit' ? 'Debit' : 'Kredit' }}
+                                    @elseif ($field === 'is_header')
+                                        {{ $value ? 'Header' : 'Akun transaksi' }}
                                     @else
                                         {{ filled($value) ? $value : '—' }}
                                     @endif

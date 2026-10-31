@@ -76,6 +76,59 @@ final class AuthTest extends TestCase
         $this->assertSame('admin', $promotable->fresh()->role);
     }
 
+    public function test_admin_can_customize_and_reset_user_menu_access(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $user = User::factory()->create(['role' => 'sales']);
+
+        $this->actingAs($admin)
+            ->get(route('users.index'))
+            ->assertOk()
+            ->assertSee('Hak Akses Menu')
+            ->assertSee('Simpan hak akses');
+
+        $this->actingAs($admin)
+            ->put(route('users.access.update', $user), [
+                'permissions' => ['stock', 'finance'],
+            ])
+            ->assertRedirect(route('users.index'));
+
+        $this->assertSame(['stock', 'finance'], $user->fresh()->permissions);
+
+        $this->actingAs($user->fresh())
+            ->get(route('stock.index'))
+            ->assertOk()
+            ->assertSee('Stok');
+        $this->get(route('sales-orders.index'))->assertForbidden();
+        $this->get(route('invoices.index'))->assertOk();
+        $this->get(route('master-data.index', 'items'))->assertForbidden();
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Stok')
+            ->assertDontSee('Sales Order');
+
+        $productionUser = User::factory()->create(['role' => 'production']);
+        $this->actingAs($admin)
+            ->put(route('users.access.update', $productionUser), [
+                'permissions' => ['master-data'],
+            ])
+            ->assertRedirect(route('users.index'));
+        $this->actingAs($productionUser->fresh())
+            ->get(route('master-data.index', 'items'))
+            ->assertOk();
+        $this->get(route('master-data.index', 'chart-of-accounts'))->assertForbidden();
+
+        $this->actingAs($admin)
+            ->put(route('users.access.update', $user), ['use_role_defaults' => '1'])
+            ->assertRedirect(route('users.index'));
+
+        $this->assertNull($user->fresh()->permissions);
+        $this->actingAs($user->fresh())
+            ->get(route('sales-orders.index'))
+            ->assertOk();
+        $this->get(route('stock.index'))->assertForbidden();
+    }
+
     public function test_user_can_log_in_and_log_out(): void
     {
         $user = User::factory()->create([

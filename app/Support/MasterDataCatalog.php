@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Models\ChartOfAccount;
 use App\Models\Customer;
 use App\Models\Item;
 use App\Models\ItemCategory;
@@ -27,6 +28,38 @@ final class MasterDataCatalog
     public static function all(): array
     {
         return [
+            'chart-of-accounts' => [
+                'label' => 'Chart of Accounts (COA)',
+                'model' => ChartOfAccount::class,
+                'columns' => [
+                    'code' => 'Kode akun',
+                    'name' => 'Nama akun',
+                    'account_type' => 'Kelompok',
+                    'normal_balance' => 'Saldo normal',
+                    'parent.name' => 'Induk akun',
+                    'is_header' => 'Tipe akun',
+                    'is_active' => 'Status',
+                ],
+                'fields' => [
+                    'code' => ['label' => 'Kode akun', 'type' => 'text', 'required' => true, 'max' => 20],
+                    'name' => ['label' => 'Nama akun', 'type' => 'text', 'required' => true, 'max' => 255],
+                    'account_type' => ['label' => 'Kelompok akun', 'type' => 'select', 'required' => true, 'options' => [
+                        'asset' => 'Aset',
+                        'liability' => 'Liabilitas',
+                        'equity' => 'Ekuitas',
+                        'revenue' => 'Pendapatan',
+                        'expense' => 'Beban',
+                    ]],
+                    'normal_balance' => ['label' => 'Saldo normal', 'type' => 'select', 'required' => true, 'options' => [
+                        'debit' => 'Debit',
+                        'credit' => 'Kredit',
+                    ]],
+                    'parent_id' => ['label' => 'Induk akun', 'type' => 'relation', 'required' => false, 'model' => ChartOfAccount::class],
+                    'is_header' => ['label' => 'Tipe akun header', 'type' => 'checkbox', 'required' => false],
+                    'is_active' => ['label' => 'Aktif', 'type' => 'checkbox', 'required' => false],
+                    'description' => ['label' => 'Keterangan', 'type' => 'textarea', 'required' => false],
+                ],
+            ],
             'items' => [
                 'label' => 'Barang',
                 'model' => Item::class,

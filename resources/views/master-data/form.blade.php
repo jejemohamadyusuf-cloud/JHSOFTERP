@@ -16,6 +16,7 @@
                     @if ($input['type'] === 'checkbox')
                         <input type="hidden" name="{{ $field }}" value="0">
                         <label class="check-label"><input type="checkbox" name="{{ $field }}" value="1" @checked((bool) $value)> <span>{{ $input['label'] }}</span></label>
+                        @error($field)<span class="field-error">{{ $message }}</span>@enderror
                     @else
                         <label for="{{ $field }}">{{ $input['label'] }} @if ($input['required']) <span class="required">*</span> @endif</label>
                         @if ($input['type'] === 'relation')

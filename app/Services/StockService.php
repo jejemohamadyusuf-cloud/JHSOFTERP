@@ -21,6 +21,8 @@ final class StockService
     public function __construct(
         private readonly InventoryNumberGenerator $numberGenerator,
         private readonly StockLevelService $stockLevels,
+        private readonly AccountingService $accounting,
+        private readonly InventoryValuationService $valuation,
     ) {}
 
     /**
@@ -100,6 +102,7 @@ final class StockService
                 'stock_take_date' => $attributes['stock_take_date'],
                 'notes' => $attributes['notes'] ?? null,
             ]);
+            $journalLines = [];
 
             foreach ($attributes['lines'] as $index => $line) {
                 $item = Item::query()
@@ -159,6 +162,8 @@ final class StockService
 
                 $direction = $discrepancy > 0 ? 'in' : 'out';
                 $quantity = number_format(abs($discrepancy), 2, '.', '');
+                $unitCost = $this->valuation->averageUnitCost((int) $item->id) ?? '0.0000';
+                $amountCents = AccountingService::valueCents($quantity, $unitCost);
                 if ($direction === 'in') {
                     $this->stockLevels->increase($item->id, $warehouse->id, $locationId, $quantity);
                 } else {
@@ -172,12 +177,32 @@ final class StockService
                     'location_id' => $locationId,
                     'transaction_type' => $direction,
                     'qty' => $quantity,
-                    'unit_cost' => '0',
+                    'unit_cost' => $unitCost,
                     'reference_type' => StockTake::class,
                     'reference_id' => $stockTake->id,
                     'notes' => $attributes['notes'] ?? null,
                 ]);
+
+                $inventoryAccount = $this->accounting->inventoryAccountCode($item->item_type);
+                $journalLines[] = [
+                    'account_code' => $direction === 'in' ? $inventoryAccount : '6400',
+                    'debit_cents' => $amountCents,
+                    'credit_cents' => 0,
+                    'description' => $direction === 'in'
+                        ? "Koreksi stok masuk {$item->name}"
+                        : "Selisih stok kurang {$item->name}",
+                ];
+                $journalLines[] = [
+                    'account_code' => $direction === 'in' ? '6400' : $inventoryAccount,
+                    'debit_cents' => 0,
+                    'credit_cents' => $amountCents,
+                    'description' => $direction === 'in'
+                        ? "Koreksi selisih stok {$item->name}"
+                        : "Pengurangan persediaan {$item->name}",
+                ];
             }
+
+            $this->accounting->post($stockTake, $stockTake->stock_take_date->toDateString(), $stockTake->stock_take_number, "Penyesuaian hasil stock take {$stockTake->stock_take_number}", $journalLines);
 
             return $stockTake;
         });
@@ -199,6 +224,7 @@ final class StockService
                 'adjustment_date' => $attributes['adjustment_date'],
                 'notes' => $attributes['notes'] ?? null,
             ]);
+            $journalLines = [];
 
             foreach ($attributes['lines'] as $index => $line) {
                 $item = Item::query()
@@ -222,7 +248,10 @@ final class StockService
                 }
 
                 $qty = (string) $line['qty'];
-                $unitCost = (string) ($line['unit_cost'] ?? '0');
+                $unitCost = $direction === 'in'
+                    ? (string) ($line['unit_cost'] ?? '0')
+                    : ($this->valuation->averageUnitCost((int) $item->id) ?? '0.0000');
+                $amountCents = AccountingService::valueCents($qty, $unitCost);
                 $adjustment->lines()->create([
                     'item_id' => $item->id,
                     'warehouse_id' => $warehouse->id,
@@ -249,7 +278,27 @@ final class StockService
                     'reference_id' => $adjustment->id,
                     'notes' => $attributes['notes'] ?? null,
                 ]);
+
+                $inventoryAccount = $this->accounting->inventoryAccountCode($item->item_type);
+                $journalLines[] = [
+                    'account_code' => $direction === 'in' ? $inventoryAccount : '6400',
+                    'debit_cents' => $amountCents,
+                    'credit_cents' => 0,
+                    'description' => $direction === 'in'
+                        ? "Adjustment masuk {$item->name}"
+                        : "Selisih kurang persediaan {$item->name}",
+                ];
+                $journalLines[] = [
+                    'account_code' => $direction === 'in' ? '6400' : $inventoryAccount,
+                    'debit_cents' => 0,
+                    'credit_cents' => $amountCents,
+                    'description' => $direction === 'in'
+                        ? "Koreksi nilai persediaan {$item->name}"
+                        : "Adjustment keluar {$item->name}",
+                ];
             }
+
+            $this->accounting->post($adjustment, $adjustment->adjustment_date->toDateString(), $adjustment->adjustment_number, "Penyesuaian stok {$adjustment->adjustment_number}", $journalLines);
 
             return $adjustment;
         });

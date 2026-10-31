@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
+use App\Http\Requests\UpdateUserAccessRequest;
 use App\Http\Requests\UpdateUserRoleRequest;
 use App\Models\User;
+use App\Support\UserAccessCatalog;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -19,6 +21,7 @@ final class UserManagementController extends Controller
         return view('users.index', [
             'users' => User::query()->orderBy('name')->paginate(20),
             'roles' => UserRole::cases(),
+            'accessPermissions' => UserAccessCatalog::all(),
         ]);
     }
 
@@ -34,5 +37,16 @@ final class UserManagementController extends Controller
         $user->update(['role' => $role]);
 
         return Redirect::route('users.index')->with('status', 'Peran pengguna berhasil diperbarui.');
+    }
+
+    public function updateAccess(UpdateUserAccessRequest $request, User $user): RedirectResponse
+    {
+        $permissions = $request->boolean('use_role_defaults')
+            ? null
+            : array_values(array_unique($request->validated('permissions', [])));
+
+        $user->update(['permissions' => $permissions]);
+
+        return Redirect::route('users.index')->with('status', 'Hak akses menu pengguna berhasil diperbarui.');
     }
 }

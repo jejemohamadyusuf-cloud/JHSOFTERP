@@ -23,7 +23,9 @@
                                 <input type="radio" name="selected_sales_order" data-list-select
                                     aria-label="Pilih SO {{ $order->so_number }}">
                                 <template data-list-actions><a class="button secondary"
-                                        href="{{ route('sales-orders.show', $order) }}">Detail</a></template>
+                                        href="{{ route('sales-orders.show', $order) }}">Detail</a>
+                                    @include('components.cancel-transaction-form', ['type' => 'sales-order', 'id' => $order->id])
+                                </template>
                             </td>
                             <td><strong>{{ $order->so_number }}</strong></td>
                             <td>{{ $order->order_date->format('d M Y') }}</td>

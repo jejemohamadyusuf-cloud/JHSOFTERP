@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\ChartOfAccount;
 use App\Models\Customer;
 use App\Models\Delivery;
+use App\Models\DeliveryLine;
+use App\Models\GeneralJournalEntry;
 use App\Models\InventoryTransaction;
 use App\Models\Invoice;
 use App\Models\Item;
+use App\Models\Payment;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderLine;
 use App\Models\StockLevel;
@@ -50,6 +54,15 @@ final class DeliveryInvoiceTest extends AuthenticatedTestCase
         $invoice = Invoice::query()->firstOrFail();
         $this->assertSame('300.00', $invoice->total_amount);
         $this->assertSame('3.0000', $invoice->lines()->firstOrFail()->qty);
+        $this->assertDatabaseHas('general_journal_entries', [
+            'source_type' => Invoice::class,
+            'source_id' => $invoice->id,
+            'reference' => $invoice->invoice_number,
+        ]);
+        $this->assertDatabaseHas('general_journal_lines', [
+            'chart_of_account_id' => ChartOfAccount::query()->where('code', '1120')->value('id'),
+            'debit_amount' => '300.00',
+        ]);
         $this->get(route('invoices.show', $invoice))->assertOk();
         $this->post(route('deliveries.invoice.store', $delivery), [
             'invoice_date' => '2026-10-21',
@@ -64,6 +77,10 @@ final class DeliveryInvoiceTest extends AuthenticatedTestCase
         ])->assertRedirect();
         $this->assertSame('partial', $invoice->fresh()->status);
         $this->assertSame('200.00', $invoice->fresh()->paid_amount);
+        $this->assertDatabaseHas('general_journal_entries', [
+            'source_type' => Payment::class,
+            'source_id' => $invoice->payments()->firstOrFail()->id,
+        ]);
 
         $this->post(route('invoices.payments.store', $invoice), [
             'payment_date' => '2026-10-23',
@@ -126,6 +143,47 @@ final class DeliveryInvoiceTest extends AuthenticatedTestCase
         $this->assertDatabaseCount('deliveries', 0);
         $this->assertDatabaseCount('inventory_transactions', 0);
         $this->assertSame('2.0000', $stock->fresh()->qty_available);
+    }
+
+    public function test_delivery_posts_cost_of_goods_sold_from_inventory_average_cost(): void
+    {
+        [$salesOrder, $line, $item, $warehouse] = $this->createSalesSetup();
+        InventoryTransaction::query()->create([
+            'transaction_date' => '2026-10-19 00:00:00',
+            'item_id' => $item->id,
+            'warehouse_id' => $warehouse->id,
+            'transaction_type' => 'in',
+            'qty' => '10.0000',
+            'unit_cost' => '50.0000',
+            'reference_type' => 'OpeningBalance',
+            'reference_id' => 1,
+        ]);
+
+        $this->post(route('deliveries.store'), [
+            'sales_order_id' => $salesOrder->id,
+            'warehouse_id' => $warehouse->id,
+            'delivery_date' => '2026-10-20',
+            'lines' => [[
+                'sales_order_line_id' => $line->id,
+                'qty' => '3.00',
+            ]],
+        ])->assertRedirect();
+
+        $delivery = Delivery::query()->firstOrFail();
+        $journal = GeneralJournalEntry::query()
+            ->where('source_type', Delivery::class)
+            ->where('source_id', $delivery->id)
+            ->with('lines.account')
+            ->firstOrFail();
+
+        $this->assertSame('150.00', $journal->lines->firstWhere('account.code', '5100')->debit_amount);
+        $this->assertSame('150.00', $journal->lines->firstWhere('account.code', '1133')->credit_amount);
+        $deliveryLine = $delivery->lines()->firstOrFail();
+        $this->assertSame('50.0000', InventoryTransaction::query()
+            ->where('reference_type', DeliveryLine::class)
+            ->where('reference_id', $deliveryLine->id)
+            ->firstOrFail()
+            ->unit_cost);
     }
 
     /**

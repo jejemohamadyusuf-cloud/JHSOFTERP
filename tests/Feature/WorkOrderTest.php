@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\Bom;
 use App\Models\BomLine;
 use App\Models\Customer;
+use App\Models\FinishedGoodsReceipt;
 use App\Models\InventoryTransaction;
 use App\Models\Item;
 use App\Models\SalesOrder;
@@ -149,6 +150,7 @@ final class WorkOrderTest extends AuthenticatedTestCase
 
         $this->assertSame('3.4000', $stock->fresh()->qty_available);
         $this->assertSame('released', $workOrder->fresh()->status);
+        $this->assertDatabaseCount('general_journal_entries', 0);
 
         $this->post(route('work-orders.production-entries.store', $workOrder), [
             'production_date' => '2026-10-23',
@@ -179,6 +181,9 @@ final class WorkOrderTest extends AuthenticatedTestCase
             ->firstOrFail();
         $this->assertSame('2.0000', $finishedStock->qty_on_hand);
         $this->assertDatabaseCount('inventory_transactions', 2);
+        $this->assertDatabaseHas('general_journal_entries', [
+            'source_type' => FinishedGoodsReceipt::class,
+        ]);
         $this->get(route('work-orders.show', $workOrder))->assertOk();
     }
 
