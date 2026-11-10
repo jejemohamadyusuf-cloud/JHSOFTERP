@@ -39,6 +39,9 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/users', [UserManagementController::class, 'index'])
         ->middleware('role:admin')
         ->name('users.index');
+    Route::post('/users', [UserManagementController::class, 'store'])
+        ->middleware('role:admin')
+        ->name('users.store');
     Route::put('/users/{user}/role', [UserManagementController::class, 'updateRole'])
         ->whereNumber('user')
         ->middleware('role:admin')

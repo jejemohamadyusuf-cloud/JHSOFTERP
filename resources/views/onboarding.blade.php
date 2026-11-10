@@ -18,7 +18,6 @@
         </a>
         <nav aria-label="Akun pengguna">
             <a class="onboarding-login" href="{{ route('login') }}">Masuk</a>
-            <a class="button primary" href="{{ route('register') }}">Buat akun</a>
         </nav>
     </header>
 
@@ -29,7 +28,7 @@
                 <h1>Kelola operasional bisnis dalam satu alur.</h1>
                 <p>JHSOFTERP membantu tim Anda menghubungkan pembelian, persediaan, produksi, pengiriman, hingga pembayaran.</p>
                 <div class="onboarding-actions">
-                    <a class="button primary" href="{{ route('register') }}">Daftarkan akun pertama <span aria-hidden="true">→</span></a>
+                    <a class="button primary" href="{{ route('login') }}">Masuk ke sistem <span aria-hidden="true">→</span></a>
                     <a class="onboarding-text-link" href="#langkah">Lihat langkah penggunaan</a>
                 </div>
             </div>
@@ -54,18 +53,16 @@
                 <article class="onboarding-step">
                     <span class="onboarding-step-number">01</span>
                     <div>
-                        <h3>Daftarkan akun pertama</h3>
-                        <p>Buat akun dengan nama, email, dan kata sandi. Akun baru mendapat peran Penjualan secara otomatis.</p>
-                        <a href="{{ route('register') }}">Daftar sekarang <span aria-hidden="true">→</span></a>
+                        <h3>Masuk dengan akun perusahaan</h3>
+                        <p>Akun pengguna dibuat dan dikelola oleh administrator perusahaan. Hubungi administrator jika Anda memerlukan akun.</p>
+                        <a href="{{ route('login') }}">Masuk sekarang <span aria-hidden="true">→</span></a>
                     </div>
                 </article>
                 <article class="onboarding-step">
                     <span class="onboarding-step-number">02</span>
                     <div>
-                        <h3>Jadikan akun pertama administrator</h3>
-                        <p>Setelah registrasi, jalankan perintah ini di terminal server menggunakan email yang didaftarkan:</p>
-                        <code>php artisan user:make-admin email@perusahaan.id</code>
-                        <p class="onboarding-step-note">Muat ulang aplikasi untuk membuka menu Pengguna &amp; Peran dan mengatur akses tim.</p>
+                        <h3>Administrator mengelola akun tim</h3>
+                        <p>Administrator dapat mendaftarkan pengguna, menetapkan peran termasuk Administrator, dan mengatur akses menu melalui Pengaturan Pengguna &amp; Hak Akses.</p>
                     </div>
                 </article>
                 <article class="onboarding-step">
@@ -91,7 +88,7 @@
                 <h2>Setiap tim mendapat menu sesuai tugasnya.</h2>
                 <p>Administrator mengatur seluruh akses. Peran operasional tersedia untuk Penjualan, Persediaan &amp; Pembelian, Produksi, dan Keuangan.</p>
             </div>
-            <a class="button secondary" href="{{ route('register') }}">Mulai menyiapkan akun</a>
+            <a class="button secondary" href="{{ route('login') }}">Masuk ke sistem</a>
         </section>
     </main>
 

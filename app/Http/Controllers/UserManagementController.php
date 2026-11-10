@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
+use App\Http\Requests\StoreManagedUserRequest;
 use App\Http\Requests\UpdateUserAccessRequest;
 use App\Http\Requests\UpdateUserRoleRequest;
 use App\Models\User;
@@ -23,6 +24,13 @@ final class UserManagementController extends Controller
             'roles' => UserRole::cases(),
             'accessPermissions' => UserAccessCatalog::all(),
         ]);
+    }
+
+    public function store(StoreManagedUserRequest $request): RedirectResponse
+    {
+        User::query()->create($request->validated());
+
+        return Redirect::route('users.index')->with('status', 'Pengguna baru berhasil didaftarkan.');
     }
 
     public function updateRole(UpdateUserRoleRequest $request, User $user): RedirectResponse

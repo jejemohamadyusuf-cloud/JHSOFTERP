@@ -8,7 +8,48 @@
     @if ($errors->has('permissions') || $errors->has('permissions.*'))
         <div class="flash error">{{ $errors->first('permissions') ?: $errors->first('permissions.*') }}</div>
     @endif
+    @if ($errors->has('name') || $errors->has('email') || $errors->has('password') || $errors->has('role'))
+        <div class="flash error">{{ $errors->first('name') ?: $errors->first('email') ?: $errors->first('password') ?: $errors->first('role') }}</div>
+    @endif
     <div class="note-panel"><span class="note-icon">i</span><span>Administrator dapat mengatur menu untuk setiap pengguna. Pilih “Gunakan akses bawaan peran” untuk mengikuti hak akses default, atau pilih menu khusus sesuai SOP perusahaan.</span></div>
+    <div class="section-heading">
+        <div>
+            <h2>Daftarkan Pengguna</h2>
+            <p>Buat akun tim dan tentukan perannya. Akun administrator hanya dapat dibuat oleh administrator.</p>
+        </div>
+    </div>
+    <form class="form-card" method="POST" action="{{ route('users.store') }}">
+        @csrf
+        <div class="form-grid">
+            <div class="form-field">
+                <label for="new-user-name">Nama lengkap</label>
+                <input id="new-user-name" type="text" name="name" value="{{ old('name') }}" required maxlength="255" autocomplete="name">
+            </div>
+            <div class="form-field">
+                <label for="new-user-email">Alamat email</label>
+                <input id="new-user-email" type="email" name="email" value="{{ old('email') }}" required maxlength="255" autocomplete="email">
+            </div>
+            <div class="form-field">
+                <label for="new-user-role">Peran</label>
+                <select id="new-user-role" name="role" required>
+                    @foreach ($roles as $role)
+                        <option value="{{ $role->value }}" @selected(old('role', \App\Enums\UserRole::Sales->value) === $role->value)>{{ $role->label() }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-field">
+                <label for="new-user-password">Kata sandi</label>
+                <input id="new-user-password" type="password" name="password" required autocomplete="new-password">
+            </div>
+            <div class="form-field">
+                <label for="new-user-password-confirmation">Konfirmasi kata sandi</label>
+                <input id="new-user-password-confirmation" type="password" name="password_confirmation" required autocomplete="new-password">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="button primary" type="submit">Daftarkan pengguna</button>
+        </div>
+    </form>
     <div class="table-card selectable-list" data-selectable-list>
         <div class="table-toolbar"><strong>Daftar Pengguna</strong><span>{{ $users->total() }} data</span></div>
         <div class="table-wrap">

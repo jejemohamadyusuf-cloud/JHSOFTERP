@@ -38,6 +38,5 @@
             </x-primary-button>
         </div>
     </form>
-
-    <p class="auth-footer">Belum punya akun? <a class="auth-link" href="{{ route('register') }}">Daftar</a></p>
+    <p class="auth-footer">Pembuatan akun dikelola oleh administrator perusahaan.</p>
 </x-guest-layout>

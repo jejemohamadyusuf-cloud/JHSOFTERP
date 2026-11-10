@@ -21,24 +21,46 @@ final class AuthTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('Empat langkah menyiapkan aplikasi')
-            ->assertSee(route('register'));
+            ->assertDontSee('/register');
         $this->get(route('dashboard'))->assertRedirect(route('login'));
         $this->get(route('boms.index'))->assertRedirect(route('login'));
+        $this->get('/register')->assertNotFound();
+        $this->post('/register')->assertNotFound();
     }
 
-    public function test_user_can_register_and_access_the_dashboard(): void
+    public function test_admin_can_create_users_with_any_role(): void
     {
-        $this->post(route('register'), [
-            'name' => 'ERP User',
-            'email' => 'erp-user@example.com',
-            'password' => 'Sufficient-pass-123',
-            'password_confirmation' => 'Sufficient-pass-123',
-        ])->assertRedirect(route('dashboard'));
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin)
+            ->post(route('users.store'), [
+                'name' => 'ERP User',
+                'email' => 'erp-user@example.com',
+                'role' => 'admin',
+                'password' => 'Sufficient-pass-123',
+                'password_confirmation' => 'Sufficient-pass-123',
+            ])
+            ->assertRedirect(route('users.index'));
 
-        $this->assertAuthenticated();
-        $this->assertDatabaseHas('users', ['email' => 'erp-user@example.com', 'role' => 'sales']);
-        $this->get(route('dashboard'))->assertOk();
-        $this->get(route('home'))->assertRedirect(route('dashboard'));
+        $this->assertDatabaseHas('users', ['email' => 'erp-user@example.com', 'role' => 'admin']);
+        $createdUser = User::query()->where('email', 'erp-user@example.com')->firstOrFail();
+        $this->assertTrue(Hash::check('Sufficient-pass-123', $createdUser->password));
+    }
+
+    public function test_non_admin_cannot_create_users(): void
+    {
+        $user = User::factory()->create(['role' => 'sales']);
+
+        $this->actingAs($user)
+            ->post(route('users.store'), [
+                'name' => 'Unauthorized User',
+                'email' => 'unauthorized@example.com',
+                'role' => 'admin',
+                'password' => 'Sufficient-pass-123',
+                'password_confirmation' => 'Sufficient-pass-123',
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('users', ['email' => 'unauthorized@example.com']);
     }
 
     public function test_roles_restrict_modules_and_admin_can_manage_roles(): void
@@ -65,6 +87,9 @@ final class AuthTest extends TestCase
         $this->put(route('users.role.update', $salesUser), ['role' => 'finance'])
             ->assertRedirect(route('users.index'));
         $this->assertSame('finance', $salesUser->fresh()->role);
+        $this->put(route('users.role.update', $salesUser), ['role' => 'admin'])
+            ->assertRedirect(route('users.index'));
+        $this->assertSame('admin', $salesUser->fresh()->role);
 
         $this->put(route('users.role.update', $admin), ['role' => 'sales'])
             ->assertSessionHasErrors('role');
@@ -85,6 +110,7 @@ final class AuthTest extends TestCase
             ->get(route('users.index'))
             ->assertOk()
             ->assertSee('Hak Akses Menu')
+            ->assertSee('Daftarkan Pengguna')
             ->assertSee('Simpan hak akses');
 
         $this->actingAs($admin)
