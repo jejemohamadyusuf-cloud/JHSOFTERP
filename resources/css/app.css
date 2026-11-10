@@ -16,7 +16,7 @@
     --peri-700: #5e64ad;
     --peri-800: #4d528d;
     font-family: 'DM Sans', sans-serif;
-    font-weight: 500;
+    font-weight: 600;
     color: #2f3045;
     background: var(--peri-50);
     font-synthesis: none;
@@ -59,8 +59,9 @@ button, input, select, textarea { font: inherit; }
 .section-heading h1, .section-heading h2 { margin: 0; font: 700 21px 'Manrope', sans-serif; color: #223247; }
 .section-heading h2 { font-size: 17px; }
 .section-heading p { margin: 5px 0 0; color: #8491a0; font-size: 12px; }
-.master-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.master-card { min-height: 155px; padding: 18px; display: flex; flex-direction: column; align-items: flex-start; position: relative; border: 1px solid #e7e7f3; border-radius: 10px; background: white; transition: transform .15s, box-shadow .15s; }
+.master-grid { display: grid; grid-auto-rows: 1fr; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.welcome-block + .master-grid, .master-grid + .master-grid { margin-top: 24px; }
+.master-card { min-height: 155px; height: 100%; padding: 18px; display: flex; flex-direction: column; align-items: flex-start; position: relative; border: 1px solid #e7e7f3; border-radius: 10px; background: white; transition: transform .15s, box-shadow .15s; }
 .master-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px #253c5010; }
 .card-icon { width: 35px; height: 35px; border-radius: 9px; background: var(--peri-100); color: var(--peri-700); display: grid; place-items: center; font-size: 17px; }
 .card-title { margin-top: 12px; font-size: 13px; font-weight: 700; color: #29384a; }
@@ -212,6 +213,7 @@ table tfoot th { border-top: 1px solid #e1e7eb; color: #334357; font-size: 12px;
     .welcome-block { padding: 25px 20px; }
     .welcome-block h1 { font-size: 22px; }
     .welcome-icon { display: none; }
+    .welcome-block + .master-grid, .master-grid + .master-grid { margin-top: 18px; }
     .section-heading { align-items: flex-start; flex-wrap: wrap; }
     .section-heading > .actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
     .table-toolbar { padding: 14px; }
@@ -274,10 +276,12 @@ table tfoot th { border-top: 1px solid #e1e7eb; color: #334357; font-size: 12px;
 .auth-card .auth-session-status { margin: 0 0 16px; color: #497c61; font-size: 12px; }
 .role-form { display: flex; align-items: center; gap: 8px; }
 .role-form select { min-width: 150px; min-height: 30px; border: 1px solid #dfe3eb; border-radius: 5px; padding: 3px 7px; color: #455366; background: #fff; font-size: 11px; }
-.access-form { display: grid; gap: 8px; min-width: 230px; padding-top: 10px; }
+.access-form { display: grid; flex: 1 1 320px; gap: 8px; min-width: 0; max-width: 100%; padding-top: 10px; }
 .access-form > strong { color: #455366; font-size: 11px; }
 .access-default, .access-options label { display: flex; align-items: center; gap: 6px; color: #657185; font-size: 11px; }
-.access-options { display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 5px 10px; }
+.access-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 10px; }
+.access-options label { min-width: 0; overflow-wrap: anywhere; }
+.access-options input { flex: 0 0 auto; }
 .onboarding-page { min-height: 100vh; color: #30334a; background: #fbfbfe; }
 .onboarding-nav { max-width: 1200px; min-height: 82px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; }
 .onboarding-nav .brand { margin: 0; }
